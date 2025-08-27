@@ -1,0 +1,122 @@
+[
+  {
+    "id": "v-001",
+    "nombre": "Válvula Principal A",
+    "tipo": "[No verificado] Esfera",
+    "ubicacion": "[No verificado] Lima / Planta A / Sala Bombas",
+    "estado": "[No verificado] Operativa",
+    "ultima_revision": "[No verificado] 2025-06-01",
+    "notas": "[No verificado] Inventado para demo.",
+    "imagen": "STATIC/IMG/IMG_20250722_112813.jpg"
+  },
+  {
+    "id": "v-002",
+    "nombre": "Válvula Bypass 1",
+    "tipo": "[No verificado] Compuerta",
+    "ubicacion": "[No verificado] Lima / Planta A / Línea 1",
+    "estado": "[No verificado] Operativa",
+    "ultima_revision": "[No verificado] 2025-05-15",
+    "notas": "[No verificado] Inventado para demo.",
+    "imagen": "STATIC/IMG/IMG_20250722_112814.jpg"
+  },
+  {
+    "id": "v-003",
+    "nombre": "Válvula Drenaje Norte",
+    "tipo": "[No verificado] Globo",
+    "ubicacion": "[No verificado] Lima / Planta A / Drenaje N",
+    "estado": "[No verificado] En inspección",
+    "ultima_revision": "[No verificado] 2025-04-20",
+    "notas": "[No verificado] Inventado para demo.",
+    "imagen": "STATIC/IMG/IMG_20250722_112815.jpg"
+  },
+  {
+    "id": "v-004",
+    "nombre": "Válvula Alimentación Tanque 1",
+    "tipo": "[No verificado] Mariposa",
+    "ubicacion": "[No verificado] Lima / Planta A / Tanque 1",
+    "estado": "[No verificado] Operativa",
+    "ultima_revision": "[No verificado] 2025-07-10",
+    "notas": "[No verificado] Inventado para demo.",
+    "imagen": "STATIC/IMG/IMG_20250722_112816.jpg"
+  },
+  {
+    "id": "v-005",
+    "nombre": "Válvula Descarga Filtro A",
+    "tipo": "[No verificado] Aguja",
+    "ubicacion": "[No verificado] Lima / Planta A / Filtro A",
+    "estado": "[No verificado] Operativa",
+    "ultima_revision": "[No verificado] 2025-06-18",
+    "notas": "[No verificado] Inventado para demo.",
+    "imagen": "STATIC/IMG/IMG_20250722_113012.jpg"
+  },
+  {
+    "id": "v-006",
+    "nombre": "Válvula Aislamiento Línea 2",
+    "tipo": "[No verificado] Esfera",
+    "ubicacion": "[No verificado] Lima / Planta A / Línea 2",
+    "estado": "[No verificado] Operativa",
+    "ultima_revision": "[No verificado] 2025-03-30",
+    "notas": "[No verificado] Inventado para demo.",
+    "imagen": "STATIC/IMG/IMG_20250722_113013.jpg"
+  },
+  {
+    "id": "v-007",
+    "nombre": "Válvula Retención Sur",
+    "tipo": "[No verificado] Retención",
+    "ubicacion": "[No verificado] Lima / Planta A / Retorno S",
+    "estado": "[No verificado] Operativa",
+    "ultima_revision": "[No verificado] 2025-02-14",
+    "notas": "[No verificado] Inventado para demo.",
+    "imagen": "STATIC/IMG/IMG_20250722_113015.jpg"
+  },
+  {
+    "id": "v-008",
+    "nombre": "Válvula Alivio 3",
+    "tipo": "[No verificado] Seguridad",
+    "ubicacion": "[No verificado] Lima / Planta A / Calderas",
+    "estado": "[No verificado] Operativa",
+    "ultima_revision": "[No verificado] 2025-01-09",
+    "notas": "[No verificado] Inventado para demo.",
+    "imagen": "STATIC/IMG/IMG_20250722_113020.jpg"
+  },
+  {
+    "id": "v-009",
+    "nombre": "Válvula Servicio Taller",
+    "tipo": "[No verificado] Esfera",
+    "ubicacion": "[No verificado] Lima / Planta A / Taller",
+    "estado": "[No verificado] Operativa",
+    "ultima_revision": "[No verificado] 2024-12-22",
+    "notas": "[No verificado] Inventado para demo.",
+    "imagen": "STATIC/IMG/IMG_20250722_113122.jpg"
+  },
+  {
+    "id": "v-010",
+    "nombre": "Válvula Entrada Compresor",
+    "tipo": "[No verificado] Mariposa",
+    "ubicacion": "[No verificado] Lima / Planta A / Compresores",
+    "estado": "[No verificado] Operativa",
+    "ultima_revision": "[No verificado] 2024-11-10",
+    "notas": "[No verificado] Inventado para demo.",
+    "imagen": "STATIC/IMG/IMG_20250722_113149.jpg"
+  },
+  {
+    "id": "v-011",
+    "nombre": "Válvula Purga Tanque 2",
+    "tipo": "[No verificado] Globo",
+    "ubicacion": "[No verificado] Lima / Planta A / Tanque 2",
+    "estado": "[No verificado] Operativa",
+    "ultima_revision": "[No verificado] 2024-10-02",
+    "notas": "[No verificado] Inventado para demo.",
+    "imagen": "STATIC/IMG/IMG_20250722_113205.jpg"
+  },
+  {
+    "id": "v-012",
+    "nombre": "Válvula Corte Emergencia",
+    "tipo": "[No verificado] Esfera",
+    "ubicacion": "[No verificado] Lima / Planta A / Emergencia",
+    "estado": "[No verificado] Operativa",
+    "ultima_revision": "[No verificado] 2024-09-15",
+    "notas": "[No verificado] Inventado para demo.",
+    "imagen": "STATIC/IMG/IMG_20250722_113210.jpg"
+  }
+]

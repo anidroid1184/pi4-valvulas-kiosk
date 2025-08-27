@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sistema de Identificación de Válvulas - Demo</title>
+  <!-- Tailwind CDN for responsive utilities -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <header class="app-header">
+    <h1>Sistema de Identificación de Válvulas</h1>
+    <p class="subtitle">[No verificado] Demo interactiva sin datos confirmados</p>
+  </header>
+  
+  <!-- Navbar -->
+  <nav class="app-nav" aria-label="Barra de navegación">
+    <button id="btnTabImages" class="nav-btn" type="button">Imágenes</button>
+    <button id="btnTabQR" class="nav-btn" type="button">Lector QR</button>
+    <button id="btnTabCamera" class="nav-btn" type="button">Cámara</button>
+    <button id="btnTabAI" class="nav-btn" type="button">Modelo AI</button>
+  </nav>
+
+  <main class="app-main">
+    <section id="status" class="status" aria-live="polite"></section>
+
+    <!-- Imágenes / Grid -->
+    <section id="imagesPanel" aria-label="Menú de válvulas">
+      <div id="grid" class="grid" role="list"></div>
+    </section>
+
+    <!-- Cámara / Vista previa (guía QR/Barcode) -->
+    <section id="cameraPanel" class="camera-panel" aria-label="Vista previa de cámara" hidden>
+      <div class="camera-header">
+        <h2 class="camera-title">[No verificado] Cámara</h2>
+      </div>
+      <div class="camera-body">
+        <div class="camera-wrap">
+          <video id="cameraVideo" autoplay playsinline muted></video>
+          <!-- Overlay guía para QR/Barcode -->
+          <div class="overlay-guide" aria-hidden="true">
+            <div class="frame center-box"></div>
+            <div class="guide-text" id="qrGuideText">Coloca el QR o código de barras dentro del marco</div>
+          </div>
+        </div>
+      </div>
+      <div class="camera-footer">
+        <button id="btnAbrirCam" class="nav-btn" type="button">Abrir cámara</button>
+        <button id="btnCerrarCam" class="nav-btn" type="button" hidden>Cerrar cámara</button>
+        <button id="btnScanQR" class="nav-btn" type="button">Escanear QR/Barcode</button>
+        <button id="btnSimularQR" class="nav-btn" type="button">Simular QR</button>
+        <span class="subtitle" style="margin-left:8px">[No verificado] Vista previa sin escaneo</span>
+      </div>
+    </section>
+
+    <!-- Modelo AI / Reconocimiento por imagen (guía de encuadre) -->
+    <section id="aiPanel" class="ai-panel" aria-label="Reconocimiento por IA" hidden>
+      <div class="camera-header">
+        <h2 class="camera-title">Modelo AI - Reconocimiento de Válvulas</h2>
+      </div>
+      <div class="camera-body">
+        <div class="camera-wrap">
+          <video id="aiVideo" autoplay playsinline muted></video>
+          <div class="overlay-guide" aria-hidden="true">
+            <div class="frame center-box"></div>
+            <div class="guide-text" id="aiGuideText">Alinea la válvula dentro del marco. Acércate o aléjate hasta que se vea nítida.</div>
+          </div>
+        </div>
+        <canvas id="aiCanvas" hidden></canvas>
+      </div>
+      <div class="camera-footer">
+        <button id="btnAIStart" class="nav-btn" type="button">Iniciar cámara</button>
+        <button id="btnAIStop" class="nav-btn" type="button" hidden>Detener cámara</button>
+        <button id="btnAICapture" class="nav-btn" type="button" disabled>Capturar y reconocer</button>
+      </div>
+      <div class="ai-result" id="aiResult" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <!-- Modal / Panel de detalle para imágenes -->
+  <div id="overlay" class="overlay" hidden></div>
+  <div id="modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" aria-describedby="modal-desc" hidden>
+    <button id="closeBtn" class="close-btn" type="button" aria-label="Cerrar panel">Cerrar</button>
+    <h2 id="modal-title"></h2>
+    <div id="modal-desc" class="modal-body"></div>
+  </div>
+
+  <script src="js/app.js" defer></script>
+  <script src="js/camera.js" defer></script>
+</body>
+</html>

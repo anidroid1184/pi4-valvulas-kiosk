@@ -1,0 +1,13 @@
+id,nombre,tipo,ubicacion,estado,ultima_revision,notas,imagen
+v-001,Válvula Principal A,[No verificado] Esfera,"[No verificado] Lima / Planta A / Sala Bombas",[No verificado] Operativa,[No verificado] 2025-06-01,[No verificado] Inventado para demo.,STATIC/IMG/IMG_20250722_112813.jpg
+v-002,Válvula Bypass 1,[No verificado] Compuerta,"[No verificado] Lima / Planta A / Línea 1",[No verificado] Operativa,[No verificado] 2025-05-15,[No verificado] Inventado para demo.,STATIC/IMG/IMG_20250722_112814.jpg
+v-003,Válvula Drenaje Norte,[No verificado] Globo,"[No verificado] Lima / Planta A / Drenaje N",[No verificado] En inspección,[No verificado] 2025-04-20,[No verificado] Inventado para demo.,STATIC/IMG/IMG_20250722_112815.jpg
+v-004,Válvula Alimentación Tanque 1,[No verificado] Mariposa,"[No verificado] Lima / Planta A / Tanque 1",[No verificado] Operativa,[No verificado] 2025-07-10,[No verificado] Inventado para demo.,STATIC/IMG/IMG_20250722_112816.jpg
+v-005,Válvula Descarga Filtro A,[No verificado] Aguja,"[No verificado] Lima / Planta A / Filtro A",[No verificado] Operativa,[No verificado] 2025-06-18,[No verificado] Inventado para demo.,STATIC/IMG/IMG_20250722_113012.jpg
+v-006,Válvula Aislamiento Línea 2,[No verificado] Esfera,"[No verificado] Lima / Planta A / Línea 2",[No verificado] Operativa,[No verificado] 2025-03-30,[No verificado] Inventado para demo.,STATIC/IMG/IMG_20250722_113013.jpg
+v-007,Válvula Retención Sur,[No verificado] Retención,"[No verificado] Lima / Planta A / Retorno S",[No verificado] Operativa,[No verificado] 2025-02-14,[No verificado] Inventado para demo.,STATIC/IMG/IMG_20250722_113015.jpg
+v-008,Válvula Alivio 3,[No verificado] Seguridad,"[No verificado] Lima / Planta A / Calderas",[No verificado] Operativa,[No verificado] 2025-01-09,[No verificado] Inventado para demo.,STATIC/IMG/IMG_20250722_113020.jpg
+v-009,Válvula Servicio Taller,[No verificado] Esfera,"[No verificado] Lima / Planta A / Taller",[No verificado] Operativa,[No verificado] 2024-12-22,[No verificado] Inventado para demo.,STATIC/IMG/IMG_20250722_113122.jpg
+v-010,Válvula Entrada Compresor,[No verificado] Mariposa,"[No verificado] Lima / Planta A / Compresores",[No verificado] Operativa,[No verificado] 2024-11-10,[No verificado] Inventado para demo.,STATIC/IMG/IMG_20250722_113149.jpg
+v-011,Válvula Purga Tanque 2,[No verificado] Globo,"[No verificado] Lima / Planta A / Tanque 2",[No verificado] Operativa,[No verificado] 2024-10-02,[No verificado] Inventado para demo.,STATIC/IMG/IMG_20250722_113205.jpg
+v-012,Válvula Corte Emergencia,[No verificado] Esfera,"[No verificado] Lima / Planta A / Emergencia",[No verificado] Operativa,[No verificado] 2024-09-15,[No verificado] Inventado para demo.,STATIC/IMG/IMG_20250722_113210.jpg

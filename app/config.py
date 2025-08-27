@@ -15,3 +15,11 @@ FULLSCREEN = True  # Kiosk mode later
 # Performance targets
 MAX_IMAGE_SIZE_KB = 500
 MAX_VALVES = 80
+
+# Vision settings (Raspberry Pi friendly)
+VISION_CACHE_DIR = DATA_DIR / ".cache"
+VISION_MAX_WIDTH = 640           # resize width for feature extraction
+VISION_ORB_FEATURES = 800        # nfeatures for ORB
+VISION_RATIO_TEST = 0.75         # Lowe's ratio test threshold
+VISION_MIN_GOOD_MATCHES = 20     # minimal good matches per class
+VISION_SCORE_THRESHOLD = 0.25    # minimal good/total ratio to accept

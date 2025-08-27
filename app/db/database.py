@@ -15,6 +15,14 @@ SCHEMA_SQL = (
     );
     CREATE INDEX IF NOT EXISTS idx_valves_nombre ON valves(nombre);
     CREATE INDEX IF NOT EXISTS idx_valves_qr ON valves(qr_code);
+
+    CREATE TABLE IF NOT EXISTS scans (
+        scan_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        code_text TEXT NOT NULL,
+        code_type TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_scans_code ON scans(code_text);
     """
 )
 
@@ -49,5 +57,18 @@ def bulk_insert_valves(rows: Iterable[tuple]) -> int:
         )
         conn.commit()
         return cur.rowcount or 0
+    finally:
+        conn.close()
+
+
+def insert_scan(code_text: str, code_type: str) -> int:
+    conn = get_connection()
+    try:
+        cur = conn.execute(
+            "INSERT INTO scans (code_text, code_type) VALUES (?, ?)",
+            (code_text, code_type),
+        )
+        conn.commit()
+        return cur.lastrowid or 0
     finally:
         conn.close()
