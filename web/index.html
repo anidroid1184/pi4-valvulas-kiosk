@@ -30,6 +30,12 @@
 
     <!-- Imágenes / Grid -->
     <section id="imagesPanel" aria-label="Menú de válvulas">
+      <div class="search-bar" role="search">
+        <label for="searchBox" class="sr-only">Buscar referencia</label>
+        <input id="searchBox" type="search" autocomplete="off" placeholder="Buscar por referencia o nombre…" aria-label="Buscar por referencia o nombre">
+        <button id="btnClearSearch" type="button" class="nav-btn" aria-label="Limpiar búsqueda">Limpiar</button>
+        <span id="searchCount" class="subtitle" aria-live="polite"></span>
+      </div>
       <div id="grid" class="grid" role="list"></div>
     </section>
 

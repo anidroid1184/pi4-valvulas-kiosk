@@ -215,6 +215,42 @@
     el.textContent = msg || '';
   }
 
+  // --- Búsqueda en la pestaña Imágenes ---
+  function setupSearch(){
+    const input = document.getElementById('searchBox');
+    const btnClear = document.getElementById('btnClearSearch');
+    const countEl = document.getElementById('searchCount');
+
+    if(!input) return;
+
+    let timer = null;
+    const debounce = (fn) => {
+      clearTimeout(timer);
+      timer = setTimeout(fn, 140);
+    };
+
+    function apply(q){
+      const query = String(q || '').trim().toLowerCase();
+      let list = state.valvulas || [];
+      if(query){
+        list = list.filter(v => {
+          const ref = (v.ref || v.id || '').toLowerCase();
+          const nom = (v.nombre || '').toLowerCase();
+          return ref.includes(query) || nom.includes(query);
+        });
+      }
+      renderMenu(list);
+      if(countEl){ countEl.textContent = query ? `${list.length} resultados` : ''; }
+    }
+
+    input.addEventListener('input', () => debounce(() => apply(input.value)));
+    input.addEventListener('keydown', (e) => { if(e.key === 'Escape'){ input.value=''; apply(''); input.blur(); } });
+    if(btnClear){ btnClear.addEventListener('click', () => { input.value=''; apply(''); input.focus(); }); }
+
+    // Primera carga sin filtro
+    apply('');
+  }
+
   // Carga de metadatos desde valvulas.json (si existe)
   async function loadMetadata(){
     try{
@@ -319,7 +355,11 @@
     grid.innerHTML = '';
 
     if(!valvulas || !valvulas.length){
-      setStatus('No se encontraron válvulas en STATIC/IMG.');
+      // Mensaje discreto dentro del grid
+      const empty = document.createElement('div');
+      empty.className = 'empty';
+      empty.textContent = 'Sin resultados';
+      grid.appendChild(empty);
       return;
     }
 
@@ -523,6 +563,7 @@
     renderMenu(catalog);
     setStatus('');
     setupNavbar();
+    setupSearch();
   }
 
   // Exponer funciones principales para pruebas manuales en consola si se requiere
