@@ -1,6 +1,11 @@
 (() => {
   'use strict';
 
+  // QR scanner (html5-qrcode)
+  let qr = null;
+  let qrActive = false;
+
+  // AI camera stream (getUserMedia)
   let mediaStream = null;
   let aiStream = null;
 
@@ -9,48 +14,61 @@
     if(el) el.textContent = msg || '';
   }
 
+  // html5-qrcode callbacks
+  function onScanSuccess(decodedText){
+    const text = String(decodedText || '').trim();
+    const resolver = (window.ValvulasApp && typeof window.ValvulasApp.findValveId === 'function') ? window.ValvulasApp.findValveId : (x=>x);
+    const id = resolver(text) || text;
+    if(window.ValvulasApp && typeof window.ValvulasApp.onValveSelect === 'function'){
+      window.ValvulasApp.onValveSelect(id);
+    }
+    setStatus(`Código detectado: ${text} → id: ${id}`);
+    // Opcional: detener para evitar lecturas repetidas
+    // if(qrActive) { closeCamera(); }
+  }
+  function onScanError(_err){ /* silencioso para no saturar UI */ }
+
   async function openCamera(){
     try{
       const panel = document.getElementById('cameraPanel');
-      const video = document.getElementById('cameraVideo');
       const btnOpen = document.getElementById('btnAbrirCam');
       const btnClose = document.getElementById('btnCerrarCam');
-
-      if(mediaStream){ return; }
-
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio:false });
-      mediaStream = stream;
-      video.srcObject = stream;
-
+      if(qrActive) return;
+      if(!qr){ qr = new Html5Qrcode('qr-reader'); }
+      await qr.start(
+        { facingMode: 'environment' },
+        { fps: 10, qrbox: { width: 320, height: 320 } },
+        onScanSuccess,
+        onScanError
+      );
+      qrActive = true;
       if(panel) panel.hidden = false;
       if(btnOpen) btnOpen.hidden = true;
       if(btnClose) btnClose.hidden = false;
-      setStatus('[No verificado] Cámara abierta (vista previa)');
+      setStatus('Cámara abierta (vista previa)');
     }catch(err){
       console.error(err);
-      setStatus('[No verificado] No fue posible acceder a la cámara');
+      setStatus('No fue posible acceder a la cámara');
     }
   }
 
   async function closeCamera(){
     try{
       const panel = document.getElementById('cameraPanel');
-      const video = document.getElementById('cameraVideo');
       const btnOpen = document.getElementById('btnAbrirCam');
       const btnClose = document.getElementById('btnCerrarCam');
 
-      if(mediaStream){
-        for(const track of mediaStream.getTracks()) track.stop();
-        mediaStream = null;
+      if(qrActive && qr){
+        try{ await qr.stop(); }catch(_){/* noop */}
+        try{ await qr.clear(); }catch(_){/* noop */}
       }
-      if(video) video.srcObject = null;
+      qrActive = false;
+
       if(panel) panel.hidden = true;
       if(btnOpen) btnOpen.hidden = false;
       if(btnClose) btnClose.hidden = true;
       setStatus('');
-    }catch(_){
-      setStatus('');
-    }
+    }catch(_){ setStatus(''); }
   }
 
   function showImagesTab(){
@@ -85,12 +103,13 @@
     startAICamera();
   }
 
+  // Conservado por compatibilidad pero no se usa con html5-qrcode
   async function scanCodeFromPreview(){
     try{
       const video = document.getElementById('cameraVideo');
       const guide = document.getElementById('qrGuideText');
       if(!video || !video.videoWidth){
-        setStatus('[No verificado] Cámara no lista para escanear');
+        setStatus('Cámara no lista para escanear');
         return;
       }
       const w = video.videoWidth || 640;
@@ -111,20 +130,20 @@
           data = await r.json();
         }else{
           const msg = await r.text();
-          setStatus(`[No verificado] Error al escanear: ${msg || r.status}`);
+          setStatus(`Error al escanear: ${msg || r.status}`);
           if(guide) guide.textContent = 'Coloca el QR o código de barras dentro del marco';
           return;
         }
       }catch(err){
         console.error(err);
-        setStatus('[No verificado] No se pudo conectar con el servicio de códigos (http://localhost:8000)');
+        setStatus('No se pudo conectar con el servicio de códigos (http://localhost:8000)');
         if(guide) guide.textContent = 'Coloca el QR o código de barras dentro del marco';
         return;
       }
 
       const codes = (data && Array.isArray(data.codes)) ? data.codes : [];
       if(!codes.length){
-        setStatus('[No verificado] No se detectaron códigos');
+        setStatus('No se detectaron códigos');
         if(guide) guide.textContent = 'Intenta acercarte y mantener el código plano';
         return;
       }
@@ -135,16 +154,16 @@
         const resolver = typeof window.ValvulasApp.findValveId === 'function' ? window.ValvulasApp.findValveId : (x=>x);
         const id = resolver(text) || text;
         window.ValvulasApp.onValveSelect(id);
-        setStatus(`[No verificado] Código detectado: ${text} → id: ${id}`);
+        setStatus(`Código detectado: ${text} → id: ${id}`);
         if(guide) guide.textContent = 'Código detectado';
         return;
       }
 
-      setStatus(`[No verificado] Código detectado: ${text}, pero no se pudo abrir el detalle automáticamente`);
+      setStatus(`Código detectado: ${text}, pero no se pudo abrir el detalle automáticamente`);
       if(guide) guide.textContent = 'Código detectado';
     }catch(err){
       console.error(err);
-      setStatus('[No verificado] Error al procesar el escaneo');
+      setStatus('Error al procesar el escaneo');
     }
   }
 
@@ -161,10 +180,10 @@
       if(btnStart) btnStart.hidden = true;
       if(btnStop) btnStop.hidden = false;
       if(btnCap) btnCap.disabled = false;
-      setStatus('[No verificado] Cámara AI lista');
+      setStatus('Cámara AI lista');
     }catch(err){
       console.error(err);
-      setStatus('[No verificado] No fue posible acceder a la cámara (AI)');
+      setStatus('No fue posible acceder a la cámara (AI)');
     }
   }
 
@@ -219,17 +238,17 @@
           renderAIResult(null);
         } else {
           const msg = await r.text();
-          setStatus(`[No verificado] Error del servidor: ${msg || r.status}`);
+          setStatus(`Error del servidor: ${msg || r.status}`);
         }
       }catch(netErr){
         console.error(netErr);
-        setStatus('[No verificado] No se pudo conectar con el servicio de reconocimiento (http://localhost:8000)');
+        setStatus('No se pudo conectar con el servicio de reconocimiento (http://localhost:8000)');
       } finally {
         if(btnAICapture){ btnAICapture.disabled = false; }
       }
     }catch(err){
       console.error(err);
-      setStatus('[No verificado] Error al capturar o reconocer');
+      setStatus('Error al capturar o reconocer');
     }
   }
 
@@ -251,12 +270,12 @@
     if(!box) return;
     box.innerHTML = '';
     if(!data){
-      box.textContent = '[No verificado] Sin coincidencias';
+      box.textContent = 'Sin coincidencias';
       return;
     }
     const title = document.createElement('div');
     title.className = 'badge ok';
-    title.textContent = `[No verificado] Coincidencia: ${data.name || data.valve_id} (conf: ${Math.round((data.confidence||0)*100)}%)`;
+    title.textContent = `Coincidencia: ${data.name || data.valve_id} (conf: ${Math.round((data.confidence||0)*100)}%)`;
 
     const btn = document.createElement('button');
     btn.type = 'button';
@@ -281,7 +300,6 @@
     const btnAIStart = document.getElementById('btnAIStart');
     const btnAIStop = document.getElementById('btnAIStop');
     const btnAICapture = document.getElementById('btnAICapture');
-    const btnScanQR = document.getElementById('btnScanQR');
     if(btnOpen) btnOpen.addEventListener('click', openCamera);
     if(btnClose) btnClose.addEventListener('click', closeCamera);
     if(btnTabImages) btnTabImages.addEventListener('click', showImagesTab);
@@ -291,11 +309,11 @@
     if(btnAIStart) btnAIStart.addEventListener('click', startAICamera);
     if(btnAIStop) btnAIStop.addEventListener('click', stopAICamera);
     if(btnAICapture) btnAICapture.addEventListener('click', captureAndRecognize);
-    if(btnScanQR) btnScanQR.addEventListener('click', scanCodeFromPreview);
   }
 
   document.addEventListener('DOMContentLoaded', init, { once:true });
 
   // Expose for manual testing if needed
+  window.CameraQR = { open: openCamera, close: closeCamera, isActive: () => qrActive };
   window.CameraDemo = { openCamera, closeCamera, showImagesTab, showCameraTab, showAITab, startAICamera, stopAICamera, captureAndRecognize };
 })();

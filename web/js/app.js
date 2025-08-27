@@ -1,7 +1,6 @@
 /*
   Sistema de Identificación de Válvulas - Landing demo (sin frameworks)
   Reglas clave:
-  - Toda info no confirmada inicia con "[No verificado]" en UI
   - No se inyecta HTML desde datos: siempre se escapan cadenas
   - Accesible: roles ARIA, foco, teclado (Enter/Space abre, Esc cierra)
 */
@@ -19,8 +18,7 @@
   let state = {
     valvulas: [],
     map: new Map(),
-    lastActivator: null,
-    mediaStream: null
+    lastActivator: null
   };
 
   // Utils
@@ -33,73 +31,92 @@
       .replaceAll("'",'&#39;');
   }
 
-  // --- Cámara: abrir/cerrar vista previa ---
+  // --- Cámara: delegar en CameraQR (html5-qrcode) ---
   async function openCamera(){
-    try{
-      const panel = document.getElementById('cameraPanel');
-      const video = document.getElementById('cameraVideo');
-      const btnOpen = document.getElementById('btnAbrirCam');
-      const btnClose = document.getElementById('btnCerrarCam');
-
-      if(state.mediaStream){ return; }
-
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio:false });
-      state.mediaStream = stream;
-      video.srcObject = stream;
-
-      panel.hidden = false;
-      btnOpen.hidden = true;
-      btnClose.hidden = false;
-      setStatus('[No verificado] Cámara abierta (vista previa)');
-    }catch(err){
-      console.error(err);
-      setStatus('[No verificado] No fue posible acceder a la cámara');
+    if(window.CameraQR && typeof window.CameraQR.open === 'function'){
+      return window.CameraQR.open();
     }
   }
 
   async function closeCamera(){
     try{
-      const panel = document.getElementById('cameraPanel');
-      const video = document.getElementById('cameraVideo');
-      const btnOpen = document.getElementById('btnAbrirCam');
-      const btnClose = document.getElementById('btnCerrarCam');
-
-      if(state.mediaStream){
-        for(const track of state.mediaStream.getTracks()){
-          track.stop();
-        }
-        state.mediaStream = null;
+      if(window.CameraQR && typeof window.CameraQR.close === 'function'){
+        await window.CameraQR.close();
       }
-      if(video){ video.srcObject = null; }
-      panel.hidden = true;
-      btnOpen.hidden = false;
-      btnClose.hidden = true;
       setStatus('');
-    }catch(_){
-      setStatus('');
-    }
+    }catch(_){ setStatus(''); }
   }
 
-  // --- Simulación de QR: abre detalle aleatorio ---
-  function simulateQR(){
-    if(!state.valvulas || !state.valvulas.length){
-      setStatus('[No verificado] No hay válvulas para simular');
-      return;
-    }
-    const idx = Math.floor(Math.random() * state.valvulas.length);
-    const v = state.valvulas[idx];
-    onValveSelect(v.id);
-  }
+  // (Simulación de QR eliminada)
 
   // --- Navbar: listeners ---
   function setupNavbar(){
-    const btnQR = document.getElementById('btnSimularQR');
+    // Desplegable
+    const navToggle = document.getElementById('btnNavToggle');
+    const navItems = document.getElementById('navItems');
+    if(navToggle && navItems){
+      navToggle.addEventListener('click', () => {
+        const expanded = navToggle.getAttribute('aria-expanded') === 'true';
+        navToggle.setAttribute('aria-expanded', String(!expanded));
+      });
+      // Cerrar al seleccionar una opción en móviles
+      navItems.addEventListener('click', (e) => {
+        const target = e.target;
+        if(target && target.matches && target.matches('button.nav-btn')){
+          navToggle.setAttribute('aria-expanded', 'false');
+        }
+      });
+    }
+
     const btnOpen = document.getElementById('btnAbrirCam');
     const btnClose = document.getElementById('btnCerrarCam');
 
-    if(btnQR){ btnQR.addEventListener('click', simulateQR); }
     if(btnOpen){ btnOpen.addEventListener('click', openCamera); }
     if(btnClose){ btnClose.addEventListener('click', closeCamera); }
+
+    // Tabs principales: Imágenes, Lector QR (usa cameraPanel), Modelo AI
+    const tabImages = document.getElementById('btnTabImages');
+    const tabQR = document.getElementById('btnTabQR');
+    const tabAI = document.getElementById('btnTabAI');
+    const imagesPanel = document.getElementById('imagesPanel');
+    const cameraPanel = document.getElementById('cameraPanel');
+    const aiPanel = document.getElementById('aiPanel');
+
+    function setActive(tab){
+      for(const el of [tabImages, tabQR, tabAI]){
+        if(!el) continue;
+        const active = el === tab;
+        el.classList.toggle('active', active);
+        if(active){ el.setAttribute('aria-current', 'page'); }
+        else { el.removeAttribute('aria-current'); }
+      }
+    }
+
+    function showPanels(target){
+      // Hide all
+      if(imagesPanel) imagesPanel.hidden = true;
+      if(cameraPanel) {
+        // Si abandonamos la cámara, cerrarla para liberar recursos
+        if(!cameraPanel.hidden && target !== 'qr'){
+          closeCamera();
+        }
+        cameraPanel.hidden = true;
+      }
+      if(aiPanel) aiPanel.hidden = true;
+
+      // Show target
+      if(target === 'images' && imagesPanel) imagesPanel.hidden = false;
+      if(target === 'qr' && cameraPanel) cameraPanel.hidden = false;
+      if(target === 'ai' && aiPanel) aiPanel.hidden = false;
+    }
+
+    if(tabImages){ tabImages.addEventListener('click', () => { setActive(tabImages); showPanels('images'); }); }
+    if(tabQR){ tabQR.addEventListener('click', () => { setActive(tabQR); showPanels('qr'); }); }
+    if(tabAI){ tabAI.addEventListener('click', () => { setActive(tabAI); showPanels('ai'); }); }
+
+    // Estado inicial: Imágenes activas
+    if(tabImages){ setActive(tabImages); }
+    showPanels('images');
   }
 
   function setStatus(msg){
@@ -150,7 +167,7 @@
     return ['valvula1.png','valvula2.png','valvula3.png'];
   }
 
-  // Construye datos ficticios para cada imagen (prefijo obligatorio [No verificado])
+  // Construye datos ficticios para cada imagen (sin prefijos de aviso)
   function buildFallbackValveData(imageList){
     const usedIds = new Set();
     const out = [];
@@ -170,11 +187,11 @@
       out.push({
         id,
         nombre,
-        tipo: '[No verificado] Tipo no especificado',
-        ubicacion: '[No verificado] Ubicación no especificada',
-        estado: '[No verificado] Estado no especificado',
-        ultima_revision: '[No verificado] Sin registro',
-        notas: '[No verificado] Ficha generada automáticamente para demostración.',
+        tipo: 'Tipo no especificado',
+        ubicacion: 'Ubicación no especificada',
+        estado: 'Estado no especificado',
+        ultima_revision: 'Sin registro',
+        notas: 'Ficha generada automáticamente para demostración.',
         imagen: typeof item === 'string' ? (IMAGE_FOLDER + file) : item.imagen
       });
     }
@@ -195,7 +212,7 @@
     grid.innerHTML = '';
 
     if(!valvulas || !valvulas.length){
-      setStatus('[No verificado] No se encontraron válvulas en STATIC/IMG.');
+      setStatus('No se encontraron válvulas en STATIC/IMG.');
       return;
     }
 
@@ -226,7 +243,7 @@
 
       const subtitle = document.createElement('div');
       subtitle.className = 'subtitle';
-      subtitle.textContent = '[No verificado] Toque para ver detalles';
+      subtitle.textContent = 'Toca para ver detalles';
 
       card.append(img, title, subtitle);
       addActivationHandlers(card, () => onValveSelect(v.id));
@@ -240,7 +257,7 @@
   function placeholderImage(){
     const ph = document.createElement('div');
     ph.className = 'placeholder';
-    ph.textContent = '[No verificado] Imagen no disponible';
+    ph.textContent = 'Imagen no disponible';
     return ph;
   }
 
@@ -287,19 +304,19 @@
     const body = document.getElementById('modal-desc');
     const closeBtn = document.getElementById('closeBtn');
 
-    title.textContent = sanitize(info.nombre || '[No verificado] Válvula');
+    title.textContent = sanitize(info.nombre || 'Válvula');
 
     // Construir contenido seguro
     const parts = [];
     if(info.notas){ parts.push(sanitize(String(info.notas))); }
-    if(info.estado){ parts.push(`[No verificado] Estado: ${sanitize(info.estado.replace(/^\[No verificado\]\s*/i,''))}`); }
-    if(info.ubicacion){ parts.push(`[No verificado] Ubicación: ${sanitize(info.ubicacion.replace(/^\[No verificado\]\s*/i,''))}`); }
-    if(info.ultima_revision){ parts.push(`[No verificado] Última revisión: ${sanitize(String(info.ultima_revision).replace(/^\[No verificado\]\s*/i,''))}`); }
+    if(info.estado){ parts.push(`Estado: ${sanitize(info.estado.replace(/^\[No verificado\]\s*/i,''))}`); }
+    if(info.ubicacion){ parts.push(`Ubicación: ${sanitize(info.ubicacion.replace(/^\[No verificado\]\s*/i,''))}`); }
+    if(info.ultima_revision){ parts.push(`Última revisión: ${sanitize(String(info.ultima_revision).replace(/^\[No verificado\]\s*/i,''))}`); }
     if(typeof info.presion_operacion_bar === 'number'){
-      parts.push(`[No verificado] Presión operación: ${sanitize(info.presion_operacion_bar)} bar`);
+      parts.push(`Presión operación: ${sanitize(info.presion_operacion_bar)} bar`);
     }
     if(typeof info.caudal_l_min === 'number'){
-      parts.push(`[No verificado] Caudal: ${sanitize(info.caudal_l_min)} L/min`);
+      parts.push(`Caudal: ${sanitize(info.caudal_l_min)} L/min`);
     }
 
     // Render como texto, sin innerHTML
@@ -343,7 +360,7 @@
   }
 
   async function initApp(){
-    setStatus('[No verificado] Cargando…');
+    setStatus('Cargando…');
 
     const [meta, images] = await Promise.all([
       loadMetadata(),
@@ -368,7 +385,7 @@
   window.ValvulasApp = {
     initApp, loadMetadata, discoverImagesFromFolder, buildFallbackValveData,
     renderMenu, onValveSelect, renderPanel, closePanel, sanitize, findValveId,
-    openCamera, closeCamera, simulateQR
+    openCamera, closeCamera
   };
 
   document.addEventListener('DOMContentLoaded', initApp, { once:true });
