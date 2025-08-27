@@ -140,6 +140,19 @@ video{display:block;width:100%;height:auto}
   border-radius:12px;
   box-shadow:0 0 0 9999px rgba(0,0,0,.2) inset, 0 0 12px rgba(0,0,0,.35);
 }
+
+/* Carousel */
+.carousel{ position:relative; overflow:hidden; border-radius:10px; margin-bottom:12px; background:#0e141b; }
+.carousel-track{ display:flex; transition:transform .28s ease; will-change:transform; }
+.carousel-slide{ min-width:100%; display:flex; align-items:center; justify-content:center; }
+.carousel-slide img{ width:100%; height:auto; object-fit:contain; max-height:60vh; }
+.carousel-btn{ position:absolute; top:50%; transform:translateY(-50%); background:rgba(0,0,0,.45); color:#fff; border:none; width:36px; height:36px; border-radius:18px; cursor:pointer; }
+.carousel-btn:hover{ background:rgba(0,0,0,.6); }
+.carousel-btn.prev{ left:8px; }
+.carousel-btn.next{ right:8px; }
+.carousel-dots{ display:flex; gap:6px; justify-content:center; padding:8px 0; }
+.carousel-dot{ width:8px; height:8px; border-radius:50%; border:none; background:#3a4a5f; cursor:pointer; }
+.carousel-dot.active{ background:#7cc4ff; }
 .overlay-guide .guide-text{
   position:absolute;left:50%;bottom:12px;transform:translateX(-50%);
   background:rgba(0,0,0,.65);color:#fff;padding:6px 12px;border-radius:999px;

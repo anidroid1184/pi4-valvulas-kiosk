@@ -10,7 +10,7 @@
 
   // Config
   const IMAGE_FOLDER = 'STATIC/IMG/'; // legacy fallback only
-  const IMAGE_LIST_JSON = IMAGE_FOLDER + 'index.json'; // legacy fallback only
+  const IMAGE_LIST_JSON = IMAGE_FOLDER + 'index.json'; // supports mapping {ref:[files...]}
   const METADATA_JSON = 'valvulas.json'; // opcional en raíz de landing
   const BACKEND = 'http://localhost:8000';
 
@@ -18,8 +18,13 @@
   let state = {
     valvulas: [],
     map: new Map(),
-    lastActivator: null
+    lastActivator: null,
+    imagesIndex: null // { ref: [files...] }
   };
+
+  // Precalentamiento
+  const PREFETCH_PER_REF = 3;   // cuántas imágenes del carrusel preparar
+  const HIGH_PRIORITY_FIRST = 12; // cuántas portadas priorizar en la grilla
 
   // Utils
   function sanitize(text) {
@@ -29,6 +34,92 @@
       .replaceAll('>','&gt;')
       .replaceAll('"','&quot;')
       .replaceAll("'",'&#39;');
+  }
+
+  // Pre-carga de imágenes del carrusel para una referencia
+  function warmupRef(ref){
+    if(!state.imagesIndex || !state.imagesIndex[ref]) return;
+    const files = state.imagesIndex[ref].slice(0, PREFETCH_PER_REF);
+    for(const f of files){
+      const url = IMAGE_FOLDER + ref + '/' + f;
+      const im = new Image();
+      try{ im.fetchPriority = 'low'; }catch(_){}
+      im.decoding = 'async';
+      im.src = url;
+    }
+  }
+
+  // Construye un carrusel básico con controles y swipe
+  function buildCarousel(urls, id){
+    const root = document.createElement('div');
+    root.className = 'carousel';
+
+    const track = document.createElement('div');
+    track.className = 'carousel-track';
+    root.appendChild(track);
+
+    urls.forEach((u, idx) => {
+      const slide = document.createElement('div');
+      slide.className = 'carousel-slide';
+      const img = document.createElement('img');
+      img.src = u;
+      img.alt = `Imagen ${idx+1}`;
+      img.loading = 'lazy';
+      img.decoding = 'async';
+      slide.appendChild(img);
+      track.appendChild(slide);
+    });
+
+    let current = 0;
+
+    function update(){
+      const offset = -current * 100;
+      track.style.transform = `translateX(${offset}%)`;
+      // update dots
+      dots.forEach((d, i) => d.classList.toggle('active', i === current));
+    }
+
+    const prev = document.createElement('button');
+    prev.className = 'carousel-btn prev';
+    prev.type = 'button';
+    prev.textContent = '‹';
+    prev.addEventListener('click', () => { current = (current - 1 + urls.length) % urls.length; update(); });
+    const next = document.createElement('button');
+    next.className = 'carousel-btn next';
+    next.type = 'button';
+    next.textContent = '›';
+    next.addEventListener('click', () => { current = (current + 1) % urls.length; update(); });
+
+    root.append(prev, next);
+
+    // dots
+    const dotsWrap = document.createElement('div');
+    dotsWrap.className = 'carousel-dots';
+    const dots = urls.map((_, i) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'carousel-dot';
+      b.addEventListener('click', () => { current = i; update(); });
+      dotsWrap.appendChild(b);
+      return b;
+    });
+    root.appendChild(dotsWrap);
+
+    // swipe
+    let startX = null;
+    root.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; }, { passive:true });
+    root.addEventListener('touchend', (e) => {
+      if(startX == null) return;
+      const dx = e.changedTouches[0].clientX - startX;
+      if(Math.abs(dx) > 40){
+        if(dx < 0) current = (current + 1) % urls.length; else current = (current - 1 + urls.length) % urls.length;
+        update();
+      }
+      startX = null;
+    }, { passive:true });
+
+    update();
+    return root;
   }
 
   // --- Cámara: delegar en CameraQR (html5-qrcode) ---
@@ -137,8 +228,11 @@
     }
   }
 
-  // Descubrimiento de imágenes: preferir backend /images/index para evitar copias
-  // Estructura esperada: { items: [{ id, image, count }] }
+  // Descubrimiento de imágenes: preferir backend /images_index; si no, usar STATIC/IMG/index.json
+  // Estructuras soportadas:
+  // - Backend: { items: [{ id, image, count }] }
+  // - Mapping: { "<ref>": ["img1.jpg", ...] }
+  // - Legacy: { images: ["file1.jpg", ...] }
   async function discoverImagesFromFolder(){
     // 1) Backend index
     try{
@@ -152,11 +246,24 @@
       }
     }catch(_){/* ignorar */}
 
-    // 2) Legacy STATIC/IMG/index.json
+    // 2) STATIC/IMG/index.json (mapping o legacy)
     try{
       const res = await fetch(IMAGE_LIST_JSON, { cache:'no-store' });
       if(res.ok){
         const data = await res.json();
+        // Nuevo formato mapeado por referencia: { ref: [files...] }
+        if(data && !Array.isArray(data)){
+          state.imagesIndex = data; // guardar para carrusel
+          const refs = Object.keys(data).sort();
+          return refs.map(ref => {
+            const files = Array.isArray(data[ref]) ? data[ref] : [];
+            const cover = files.length ? files[0] : null;
+            const imagen = cover ? (IMAGE_FOLDER + ref + '/' + cover) : (IMAGE_FOLDER + 'placeholder.png');
+            // nombre debe ser exactamente la referencia (nombre de carpeta)
+            return { id: ref, ref, imagen, nombre: ref };
+          });
+        }
+        // Formato legacy
         if(data && Array.isArray(data.images) && data.images.length){
           return data.images.filter(x => typeof x === 'string').map(file => ({ id: file.replace(/\.[^.]+$/, ''), imagen: IMAGE_FOLDER + file, nombre: tituloFromFilename(file) }));
         }
@@ -218,6 +325,7 @@
 
     const frag = document.createDocumentFragment();
 
+    let idx = 0;
     for(const v of valvulas){
       state.map.set(v.id, v);
 
@@ -227,9 +335,12 @@
       card.setAttribute('tabindex','0');
       card.setAttribute('aria-label', `Abrir detalles de ${sanitize(v.nombre)}`);
       card.dataset.id = v.id;
+      if(v.ref){ card.dataset.ref = v.ref; }
 
       const img = document.createElement('img');
-      img.loading = 'lazy';
+      // Carga ansiosa de portadas
+      img.loading = 'eager';
+      if(idx < HIGH_PRIORITY_FIRST){ try{ img.fetchPriority = 'high'; }catch(_){} }
       img.decoding = 'async';
       img.src = v.imagen;
       img.alt = `${sanitize(v.nombre)} (${v.id})`;
@@ -248,7 +359,15 @@
       card.append(img, title, subtitle);
       addActivationHandlers(card, () => onValveSelect(v.id));
 
+      // Precalentar imágenes del carrusel al pasar el mouse o enfocar
+      if(v.ref){
+        const warm = () => warmupRef(v.ref);
+        card.addEventListener('mouseenter', warm, { once:true, passive:true });
+        card.addEventListener('focus', warm, { once:true, passive:true });
+      }
+
       frag.appendChild(card);
+      idx++;
     }
 
     grid.appendChild(frag);
@@ -276,6 +395,7 @@
   function onValveSelect(id){
     state.lastActivator = document.activeElement;
     const v = state.map.get(id) || buildFallbackValveData([id + '.png'])[0];
+    if(!v.ref) v.ref = id; // asumir referencia = id
     renderPanel(v);
   }
 
@@ -306,7 +426,29 @@
 
     title.textContent = sanitize(info.nombre || 'Válvula');
 
-    // Construir contenido seguro
+    // Reset body
+    body.innerHTML = '';
+
+    // Carrusel (hasta 3 imágenes) si tenemos índice y referencia
+    const ref = info.ref || info.id;
+    if(state.imagesIndex && ref && state.imagesIndex[ref]){
+      const files = state.imagesIndex[ref].slice(0, 3);
+      const urls = files.map(f => IMAGE_FOLDER + ref + '/' + f);
+      const carousel = buildCarousel(urls, `${ref}-carousel`);
+      body.appendChild(carousel);
+    } else if(info.imagen){
+      // Fallback: solo portada
+      const img = document.createElement('img');
+      img.src = info.imagen;
+      img.alt = title.textContent + ' - portada';
+      img.loading = 'lazy';
+      img.decoding = 'async';
+      img.style.maxWidth = '100%';
+      img.style.borderRadius = '8px';
+      body.appendChild(img);
+    }
+
+    // Construir contenido seguro (badges)
     const parts = [];
     if(info.notas){ parts.push(sanitize(String(info.notas))); }
     if(info.estado){ parts.push(`Estado: ${sanitize(info.estado.replace(/^\[No verificado\]\s*/i,''))}`); }
@@ -320,7 +462,6 @@
     }
 
     // Render como texto, sin innerHTML
-    body.innerHTML = '';
     for(const p of parts){
       const badge = document.createElement('div');
       badge.className = 'badge ok';
@@ -368,8 +509,11 @@
     ]);
 
     let catalog = [];
-    // Si hay metadata verificada, úsala. Si no, construimos catálogo con el backend index.
-    if(meta && meta.length){
+    // Regla del cliente: si existe índice estático (mapping), SIEMPRE usarlo.
+    if(state.imagesIndex){
+      catalog = Array.isArray(images) ? images : buildFallbackValveData(images || []);
+    } else if(meta && meta.length){
+      // Si no hay mapping, usar metadata si está disponible
       catalog = meta;
     } else {
       catalog = buildFallbackValveData(images || []);

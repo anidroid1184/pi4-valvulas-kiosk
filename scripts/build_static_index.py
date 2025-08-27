@@ -1,58 +1,42 @@
 import json
-import shutil
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-DATA_IMAGES = ROOT / 'data' / 'images'
 WEB_STATIC_IMG = ROOT / 'web' / 'STATIC' / 'IMG'
 INDEX_JSON = WEB_STATIC_IMG / 'index.json'
 
 VALID_EXTS = {'.jpg', '.jpeg', '.png', '.webp'}
+PORTADA_KEYS = ("cover", "portada")
 
 
-def pick_image_in_folder(folder: Path) -> Path | None:
-    """Return one representative image path in the folder, preferring common formats."""
-    if not folder.is_dir():
-        return None
-    # prefer by extension order
-    candidates = sorted([p for p in folder.iterdir() if p.suffix.lower() in VALID_EXTS])
-    return candidates[0] if candidates else None
+def list_images(folder: Path) -> list[str]:
+    files = [p.name for p in folder.iterdir() if p.is_file() and p.suffix.lower() in VALID_EXTS]
+    files.sort(key=lambda x: x.lower())
+    # portada primero si existe
+    portada = [f for f in files if any(k in f.lower() for k in PORTADA_KEYS)]
+    others = [f for f in files if f not in portada]
+    return portada + others
 
 
 def main():
     WEB_STATIC_IMG.mkdir(parents=True, exist_ok=True)
 
-    if not DATA_IMAGES.exists():
-        print(f"No existe {DATA_IMAGES}. Nada que hacer.")
-        return
-
-    copied = []
-    for sub in sorted(DATA_IMAGES.iterdir()):
+    mapping: dict[str, list[str]] = {}
+    for sub in sorted(WEB_STATIC_IMG.iterdir()):
         if not sub.is_dir():
             continue
-        valve_id = sub.name.strip()
-        img = pick_image_in_folder(sub)
-        if not img:
-            continue
-        # keep original extension
-        out_name = f"{valve_id}{img.suffix.lower()}"
-        out_path = WEB_STATIC_IMG / out_name
-        try:
-            shutil.copyfile(img, out_path)
-            copied.append(out_name)
-        except Exception as e:
-            print(f"Error copiando {img} -> {out_path}: {e}")
-            continue
+        ref = sub.name.strip()
+        imgs = list_images(sub)
+        if imgs:
+            mapping[ref] = imgs
 
-    payload = {"images": copied}
     try:
         with INDEX_JSON.open('w', encoding='utf-8') as f:
-            json.dump(payload, f, ensure_ascii=False, indent=2)
+            json.dump(mapping, f, ensure_ascii=False, indent=2)
+        print(f"Generado {INDEX_JSON} con {len(mapping)} referencias.")
     except Exception as e:
         print(f"Error escribiendo {INDEX_JSON}: {e}")
         return
-
-    print(f"Listo. Copiadas {len(copied)} imágenes de muestra y creado {INDEX_JSON}.")
 
 
 if __name__ == '__main__':
