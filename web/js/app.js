@@ -9,8 +9,9 @@
   'use strict';
 
   // Config
-  const IMAGE_FOLDER = 'STATIC/IMG/'; // legacy fallback only
-  const IMAGE_LIST_JSON = IMAGE_FOLDER + 'index.json'; // supports mapping {ref:[files...]}
+  const IMAGE_FOLDER = 'STATIC/IMG/card-photos/'; // carpeta para portadas por referencia
+  const IMAGE_LIST_JSON = IMAGE_FOLDER + 'index.json'; // formato: { images: ["file1.jpg", ...] }
+  const FORCE_LEGACY_STATIC = true; // forzar carga desde index.json de card-photos
   const METADATA_JSON = 'valvulas.json'; // opcional en raíz de landing
   const BACKEND = 'http://localhost:8000';
 
@@ -34,6 +35,16 @@
       .replaceAll('>','&gt;')
       .replaceAll('"','&quot;')
       .replaceAll("'",'&#39;');
+  }
+
+  // Normaliza URLs por si un índice antiguo incluye subcarpetas espurias como "images/"
+  function normalizeCardPhotoUrl(url){
+    let out = String(url || '');
+    // Quitar cualquier segmento '/images/' justo después de 'card-photos/'
+    out = out.replace(/(card-photos\/)images\//i, '$1');
+    // Colapsar separadores múltiples
+    out = out.replace(/\\+/g,'/');
+    return out;
   }
 
   // Pre-carga de imágenes del carrusel para una referencia
@@ -270,44 +281,27 @@
   // - Mapping: { "<ref>": ["img1.jpg", ...] }
   // - Legacy: { images: ["file1.jpg", ...] }
   async function discoverImagesFromFolder(){
-    // 1) Backend index
-    try{
-      const res = await fetch(`${BACKEND}/images_index`, { cache:'no-store' });
-      if(res.ok){
+    // Modo forzado: solo lee index.json legacy y construye URLs planas
+    if(FORCE_LEGACY_STATIC){
+      try{
+        const res = await fetch(IMAGE_LIST_JSON, { cache:'no-store' });
+        if(!res.ok) return [];
         const data = await res.json();
-        if(data && Array.isArray(data.items) && data.items.length){
-          // Convertir a lista de objetos válvula mínima
-          return data.items.map(it => ({ id: it.id, imagen: `${BACKEND}${it.image}`, nombre: tituloFromFilename(it.id) }));
-        }
-      }
-    }catch(_){/* ignorar */}
-
-    // 2) STATIC/IMG/index.json (mapping o legacy)
-    try{
-      const res = await fetch(IMAGE_LIST_JSON, { cache:'no-store' });
-      if(res.ok){
-        const data = await res.json();
-        // Nuevo formato mapeado por referencia: { ref: [files...] }
-        if(data && !Array.isArray(data)){
-          state.imagesIndex = data; // guardar para carrusel
-          const refs = Object.keys(data).sort();
-          return refs.map(ref => {
-            const files = Array.isArray(data[ref]) ? data[ref] : [];
-            const cover = files.length ? files[0] : null;
-            const imagen = cover ? (IMAGE_FOLDER + ref + '/' + cover) : (IMAGE_FOLDER + 'placeholder.png');
-            // nombre debe ser exactamente la referencia (nombre de carpeta)
-            return { id: ref, ref, imagen, nombre: ref };
+        if(!data || !Array.isArray(data.images)) return [];
+        const out = data.images
+          .filter(x => typeof x === 'string')
+          .map(raw => {
+            const file = String(raw).trim().split('\\').pop().split('/').pop();
+            const base = file.replace(/\.[^.]+$/, '');
+            const url = normalizeCardPhotoUrl(IMAGE_FOLDER + file);
+            return { id: base, ref: base, imagen: url, nombre: base };
           });
-        }
-        // Formato legacy
-        if(data && Array.isArray(data.images) && data.images.length){
-          return data.images.filter(x => typeof x === 'string').map(file => ({ id: file.replace(/\.[^.]+$/, ''), imagen: IMAGE_FOLDER + file, nombre: tituloFromFilename(file) }));
-        }
-      }
-    }catch(_){/* ignorar */}
+        try{ console.log('[IMG] mode=legacy-forced sample=', out[0]?.imagen); }catch(_){ }
+        return out;
+      }catch(_){ return []; }
+    }
 
-    // Fallback: lista mínima para demo. Sustituye por tus archivos reales.
-    return ['valvula1.png','valvula2.png','valvula3.png'];
+    // Si se desactiva FORCE_LEGACY_STATIC, usar la lógica completa (backend/mapping)...
   }
 
   // Construye datos ficticios para cada imagen (sin prefijos de aviso)
@@ -549,11 +543,14 @@
     ]);
 
     let catalog = [];
-    // Regla del cliente: si existe índice estático (mapping), SIEMPRE usarlo.
-    if(state.imagesIndex){
+    // Prioridad: si hay imágenes desde card-photos, usarlas SIEMPRE
+    if(Array.isArray(images) && images.length){
+      catalog = images;
+    } else if(state.imagesIndex){
+      // (No aplicará en modo FORCE_LEGACY_STATIC=true, pero mantenemos por compatibilidad)
       catalog = Array.isArray(images) ? images : buildFallbackValveData(images || []);
     } else if(meta && meta.length){
-      // Si no hay mapping, usar metadata si está disponible
+      // Solo si no hay imágenes, usa la metadata demo
       catalog = meta;
     } else {
       catalog = buildFallbackValveData(images || []);
