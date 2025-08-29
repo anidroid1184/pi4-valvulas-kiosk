@@ -10,7 +10,8 @@ from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 
 from app.config import IMAGES_DIR
-from app.db.database import init_db, insert_scan
+from app.db.database import init_db, insert_scan, bulk_insert_valves, get_connection
+from app.services.excel_service import parse_excel_to_rows
 
 from app.services.vision_service import index_dataset, recognize_image
 
@@ -119,3 +120,45 @@ async def scan_code(image: UploadFile = File(...)):
         raise HTTPException(status_code=404, detail="No code found")
 
     return JSONResponse({"codes": out})
+
+
+@app.post("/valves/upload_excel")
+async def upload_excel(file: UploadFile = File(...)):
+    """Upload an Excel file with valve data and store into SQLite.
+
+    Expected columns (case-insensitive): id, nombre, uso, ubicacion, qr_code, foto
+    Returns: { inserted: int }
+    """
+    try:
+        data = await file.read()
+        rows = parse_excel_to_rows(data)
+        count = bulk_insert_valves(rows)
+        return JSONResponse({"inserted": count})
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to process Excel: {e}")
+
+
+@app.get("/valves")
+def list_valves():
+    conn = get_connection()
+    try:
+        cur = conn.execute("SELECT id, nombre, uso, ubicacion, qr_code, foto FROM valves ORDER BY id ASC")
+        rows = [dict(r) for r in cur.fetchall()]
+        return JSONResponse({"items": rows})
+    finally:
+        conn.close()
+
+
+@app.get("/valves/{valve_id}")
+def get_valve(valve_id: int):
+    conn = get_connection()
+    try:
+        cur = conn.execute("SELECT id, nombre, uso, ubicacion, qr_code, foto FROM valves WHERE id = ?", (valve_id,))
+        row = cur.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Valve not found")
+        return JSONResponse(dict(row))
+    finally:
+        conn.close()

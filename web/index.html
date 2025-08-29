@@ -22,68 +22,93 @@
       <button id="btnTabImages" class="nav-btn" type="button" role="menuitem">Imágenes</button>
       <button id="btnTabQR" class="nav-btn" type="button" role="menuitem">Lector QR</button>
       <button id="btnTabAI" class="nav-btn" type="button" role="menuitem">Modelo AI</button>
+      <button id="btnTabUpload" class="nav-btn" type="button" role="menuitem">Cargar Excel</button>
     </div>
   </nav>
 
   <main class="app-main">
-    <section id="status" class="status" aria-live="polite"></section>
-
-    <!-- Imágenes / Grid -->
-    <section id="imagesPanel" aria-label="Menú de válvulas">
-      <div class="search-bar" role="search">
-        <label for="searchBox" class="sr-only">Buscar referencia</label>
-        <input id="searchBox" type="search" autocomplete="off" placeholder="Buscar por referencia o nombre…" aria-label="Buscar por referencia o nombre">
-        <button id="btnClearSearch" type="button" class="nav-btn" aria-label="Limpiar búsqueda">Limpiar</button>
-        <span id="searchCount" class="subtitle" aria-live="polite"></span>
-      </div>
-      <div id="grid" class="grid" role="list"></div>
-    </section>
-
-    <!-- Cámara / Vista previa (guía QR/Barcode) -->
-    <section id="cameraPanel" class="camera-panel" aria-label="Vista previa de cámara" hidden>
-      <div class="camera-header">
-        <h2 class="camera-title">Cámara</h2>
-      </div>
-      <div class="camera-body">
-        <div class="camera-wrap">
-          <div id="qr-reader"></div>
-          <!-- Overlay guía para QR/Barcode -->
-          <div class="overlay-guide" aria-hidden="true">
-            <div class="frame center-box"></div>
-            <div class="guide-text" id="qrGuideText">Coloca el QR o código de barras dentro del marco</div>
-          </div>
+    <div class="layout">
+      <aside id="sidebar" class="sidebar" aria-label="Panel lateral de información">
+        <div class="sidebar-header">
+          <h2 class="camera-title" id="sidebarTitle">Detalle</h2>
         </div>
-      </div>
-      <div class="camera-footer">
-        <button id="btnAbrirCam" class="nav-btn" type="button">Abrir cámara</button>
-        <button id="btnCerrarCam" class="nav-btn" type="button" hidden>Cerrar cámara</button>
-        <span class="subtitle" style="margin-left:8px">Vista previa sin escaneo</span>
-      </div>
-    </section>
+        <div id="sidebarBody" class="sidebar-body" aria-live="polite"></div>
+      </aside>
 
-    <!-- Modelo AI / Reconocimiento por imagen (guía de encuadre) -->
-    <section id="aiPanel" class="ai-panel" aria-label="Reconocimiento por IA" hidden>
-      <div class="camera-header">
-        <h2 class="camera-title">Modelo AI - Reconocimiento de Válvulas</h2>
-      </div>
-      <div class="camera-body">
-        <div class="camera-wrap">
-          <video id="aiVideo" autoplay playsinline muted></video>
-          <div class="overlay-guide" aria-hidden="true">
-            <div class="frame center-box"></div>
-            <div class="guide-text" id="aiGuideText">Alinea la válvula dentro del marco. Acércate o aléjate hasta que se
-              vea nítida.</div>
+      <div class="content">
+        <section id="status" class="status" aria-live="polite"></section>
+
+        <!-- Imágenes / Grid -->
+        <section id="imagesPanel" aria-label="Menú de válvulas">
+          <div class="search-bar" role="search">
+            <label for="searchBox" class="sr-only">Buscar referencia</label>
+            <input id="searchBox" type="search" autocomplete="off" placeholder="Buscar por referencia o nombre…" aria-label="Buscar por referencia o nombre">
+            <button id="btnClearSearch" type="button" class="nav-btn" aria-label="Limpiar búsqueda">Limpiar</button>
+            <span id="searchCount" class="subtitle" aria-live="polite"></span>
           </div>
-        </div>
-        <canvas id="aiCanvas" hidden></canvas>
+          <div id="grid" class="grid" role="list"></div>
+        </section>
+
+        <!-- Cámara / Vista previa (guía QR/Barcode) -->
+        <section id="cameraPanel" class="camera-panel" aria-label="Vista previa de cámara" hidden>
+          <div class="camera-header">
+            <h2 class="camera-title">Cámara</h2>
+          </div>
+          <div class="camera-body">
+            <div class="camera-wrap">
+              <div id="qr-reader"></div>
+              <!-- Overlay guía para QR/Barcode -->
+              <div class="overlay-guide" aria-hidden="true">
+                <div class="frame center-box"></div>
+                <div class="guide-text" id="qrGuideText">Coloca el QR o código de barras dentro del marco</div>
+              </div>
+            </div>
+          </div>
+          <div class="camera-footer">
+            <button id="btnAbrirCam" class="nav-btn" type="button">Abrir cámara</button>
+            <button id="btnCerrarCam" class="nav-btn" type="button" hidden>Cerrar cámara</button>
+            <span class="subtitle" style="margin-left:8px">Vista previa sin escaneo</span>
+          </div>
+        </section>
+
+        <!-- Modelo AI / Reconocimiento por imagen (guía de encuadre) -->
+        <section id="aiPanel" class="ai-panel" aria-label="Reconocimiento por IA" hidden>
+          <div class="camera-header">
+            <h2 class="camera-title">Modelo AI - Reconocimiento de Válvulas</h2>
+          </div>
+          <div class="camera-body">
+            <div class="camera-wrap">
+              <video id="aiVideo" autoplay playsinline muted></video>
+              <div class="overlay-guide" aria-hidden="true">
+                <div class="frame center-box"></div>
+                <div class="guide-text" id="aiGuideText">Alinea la válvula dentro del marco. Acércate o aléjate hasta que se
+                  vea nítida.</div>
+              </div>
+            </div>
+            <canvas id="aiCanvas" hidden></canvas>
+          </div>
+          <div class="camera-footer">
+            <button id="btnAIStart" class="nav-btn" type="button">Iniciar cámara</button>
+            <button id="btnAIStop" class="nav-btn" type="button" hidden>Detener cámara</button>
+            <button id="btnAICapture" class="nav-btn" type="button" disabled>Capturar y reconocer</button>
+          </div>
+          <div class="ai-result" id="aiResult" aria-live="polite"></div>
+        </section>
+
+        <!-- Carga de Excel -->
+        <section id="uploadPanel" class="camera-panel" aria-label="Carga de Excel" hidden>
+          <div class="camera-header">
+            <h2 class="camera-title">Cargar Excel de Válvulas</h2>
+          </div>
+          <div class="camera-body">
+            <p class="subtitle">Formato requerido: columnas id, nombre, uso, ubicacion, qr_code, foto</p>
+            <input id="excelFile" type="file" accept=".xlsx,.xls" />
+            <button id="btnUploadExcel" class="nav-btn" type="button" style="margin-top:10px">Subir y actualizar</button>
+            <div id="uploadResult" class="subtitle" style="margin-top:8px"></div>
+          </div>
+        </section>
       </div>
-      <div class="camera-footer">
-        <button id="btnAIStart" class="nav-btn" type="button">Iniciar cámara</button>
-        <button id="btnAIStop" class="nav-btn" type="button" hidden>Detener cámara</button>
-        <button id="btnAICapture" class="nav-btn" type="button" disabled>Capturar y reconocer</button>
-      </div>
-      <div class="ai-result" id="aiResult" aria-live="polite"></div>
-    </section>
+    </div>
   </main>
 
   <!-- Modal / Panel de detalle para imágenes -->

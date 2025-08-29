@@ -7,3 +7,8 @@ pytest==8.3.1
 # API (microservicio visión)
 fastapi==0.111.0
 uvicorn[standard]==0.29.0
+
+# Excel import
+pandas==2.2.2
+openpyxl==3.1.5
+python-multipart==0.0.9

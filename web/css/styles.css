@@ -85,6 +85,22 @@ body{
 .app-main{padding:16px}
 .status{min-height:1.25rem;color:var(--muted);margin:6px auto 10px;text-align:center;font-size:.9rem}
 
+/* App layout with persistent sidebar */
+.layout{ display:grid; grid-template-columns: 280px 1fr; gap:16px; align-items:start; }
+.content{ min-width:0 }
+.sidebar{
+  position:sticky; top:16px; align-self:start;
+  background:var(--card); border:1px solid var(--border); border-radius:10px; overflow:auto;
+  max-height:calc(100vh - 120px);
+}
+.sidebar-header{ padding:10px 12px; border-bottom:1px solid var(--border); }
+.sidebar-body{ padding:12px; color:var(--text); }
+
+@media (max-width: 1023px){
+  .layout{ grid-template-columns: 1fr; }
+  .sidebar{ order: -1; position:relative; top:auto; max-height:none; }
+}
+
 /* Search bar */
 .search-bar{
   display:flex;align-items:center;gap:8px;flex-wrap:wrap;

@@ -430,7 +430,10 @@
     state.lastActivator = document.activeElement;
     const v = state.map.get(id) || buildFallbackValveData([id + '.png'])[0];
     if(!v.ref) v.ref = id; // asumir referencia = id
-    renderPanel(v);
+    // En lugar de abrir modal, volcamos la selección en el sidebar persistente
+    renderSidebar(v);
+    // Cerrar modal si estuviera abierto por alguna razón
+    try{ closePanel(); }catch(_){}
   }
 
   // Resolver de código escaneado a ID válido del catálogo
@@ -534,6 +537,38 @@
     }
   }
 
+  // --- Sidebar persistente (por ahora vacío) ---
+  function renderSidebar(data){
+    const title = document.getElementById('sidebarTitle');
+    const body = document.getElementById('sidebarBody');
+    if(!title || !body) return;
+
+    // Título según selección (o "Detalle" si no hay selección)
+    if(data && (data.nombre || data.id)){
+      title.textContent = sanitize(data.nombre || data.id);
+    } else {
+      title.textContent = 'Detalle';
+    }
+
+    // Estado vacío (placeholder). Más adelante se reemplazará con los campos reales.
+    body.innerHTML = '';
+    const ph = document.createElement('div');
+    ph.className = 'subtitle';
+    ph.style.margin = '6px 0 8px';
+    ph.textContent = data ? 'Contenido pendiente: aquí irá la información de la válvula seleccionada.' : 'Selecciona una válvula para ver la información aquí.';
+    body.appendChild(ph);
+
+    // En pantallas pequeñas, hacer scroll al sidebar para que el usuario lo vea
+    try{
+      if(window.matchMedia && window.matchMedia('(max-width: 1023px)').matches){
+        const el = document.getElementById('sidebar');
+        if(el && typeof el.scrollIntoView === 'function'){
+          el.scrollIntoView({ behavior:'smooth', block:'start' });
+        }
+      }
+    }catch(_){ }
+  }
+
   async function initApp(){
     setStatus('Cargando…');
 
@@ -561,13 +596,15 @@
     setStatus('');
     setupNavbar();
     setupSearch();
+    // Inicializar sidebar vacío
+    renderSidebar(null);
   }
 
   // Exponer funciones principales para pruebas manuales en consola si se requiere
   window.ValvulasApp = {
     initApp, loadMetadata, discoverImagesFromFolder, buildFallbackValveData,
     renderMenu, onValveSelect, renderPanel, closePanel, sanitize, findValveId,
-    openCamera, closeCamera
+    openCamera, closeCamera, renderSidebar
   };
 
   document.addEventListener('DOMContentLoaded', initApp, { once:true });
