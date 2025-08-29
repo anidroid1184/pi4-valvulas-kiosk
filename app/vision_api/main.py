@@ -126,7 +126,7 @@ async def scan_code(image: UploadFile = File(...)):
 async def upload_excel(file: UploadFile = File(...)):
     """Upload an Excel file with valve data and store into SQLite.
 
-    Expected columns (case-insensitive): id, nombre, uso, ubicacion, qr_code, foto
+    Expected columns (case-insensitive): Valvula, Cantidad, Ubicación, # de serie, Ficha tecnica, Simbolo
     Returns: { inserted: int }
     """
     try:
@@ -144,19 +144,47 @@ async def upload_excel(file: UploadFile = File(...)):
 def list_valves():
     conn = get_connection()
     try:
-        cur = conn.execute("SELECT id, nombre, uso, ubicacion, qr_code, foto FROM valves ORDER BY id ASC")
+        cur = conn.execute(
+            "SELECT id, valvula, cantidad, ubicacion, numero_serie, ficha_tecnica, simbolo FROM valves ORDER BY id ASC"
+        )
         rows = [dict(r) for r in cur.fetchall()]
         return JSONResponse({"items": rows})
     finally:
         conn.close()
 
 
-@app.get("/valves/{valve_id}")
-def get_valve(valve_id: int):
+@app.get("/valves/{key}")
+def get_valve(key: str):
+    """Get valve by numeric id or by reference text.
+
+    Accepts:
+    - id numérico exacto (e.g., 12)
+    - nombre exacto (e.g., "152865")
+    - serie exacta (e.g., "152865")
+    """
     conn = get_connection()
     try:
-        cur = conn.execute("SELECT id, nombre, uso, ubicacion, qr_code, foto FROM valves WHERE id = ?", (valve_id,))
-        row = cur.fetchone()
+        row = None
+        # 1) Si es número, intentar por id
+        try:
+            vid = int(key)
+        except ValueError:
+            vid = None
+        if vid is not None:
+            cur = conn.execute(
+                "SELECT id, valvula, cantidad, ubicacion, numero_serie, ficha_tecnica, simbolo FROM valves WHERE id = ?",
+                (vid,),
+            )
+            row = cur.fetchone()
+
+        # 2) Si no hubo match, intentar por nombre o serie
+        if not row:
+            cur = conn.execute(
+                "SELECT id, valvula, cantidad, ubicacion, numero_serie, ficha_tecnica, simbolo FROM valves WHERE valvula = ? OR numero_serie = ?",
+                (key, key),
+            )
+            row = cur.fetchone()
+
         if not row:
             raise HTTPException(status_code=404, detail="Valve not found")
         return JSONResponse(dict(row))

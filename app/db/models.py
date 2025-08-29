@@ -4,8 +4,9 @@ from typing import Optional
 @dataclass
 class Valve:
     id: int
-    nombre: str
-    uso: Optional[str]
+    valvula: str
+    cantidad: Optional[int]
     ubicacion: Optional[str]
-    qr_code: Optional[str]
-    foto: Optional[str]
+    numero_serie: Optional[str]
+    ficha_tecnica: Optional[str]
+    simbolo: Optional[str]

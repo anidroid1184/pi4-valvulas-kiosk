@@ -180,12 +180,14 @@
     const tabImages = document.getElementById('btnTabImages');
     const tabQR = document.getElementById('btnTabQR');
     const tabAI = document.getElementById('btnTabAI');
+    const tabUpload = document.getElementById('btnTabUpload');
     const imagesPanel = document.getElementById('imagesPanel');
     const cameraPanel = document.getElementById('cameraPanel');
     const aiPanel = document.getElementById('aiPanel');
+    const uploadPanel = document.getElementById('uploadPanel');
 
     function setActive(tab){
-      for(const el of [tabImages, tabQR, tabAI]){
+      for(const el of [tabImages, tabQR, tabAI, tabUpload]){
         if(!el) continue;
         const active = el === tab;
         el.classList.toggle('active', active);
@@ -205,16 +207,19 @@
         cameraPanel.hidden = true;
       }
       if(aiPanel) aiPanel.hidden = true;
+      if(uploadPanel) uploadPanel.hidden = true;
 
       // Show target
       if(target === 'images' && imagesPanel) imagesPanel.hidden = false;
       if(target === 'qr' && cameraPanel) cameraPanel.hidden = false;
       if(target === 'ai' && aiPanel) aiPanel.hidden = false;
+      if(target === 'upload' && uploadPanel) uploadPanel.hidden = false;
     }
 
     if(tabImages){ tabImages.addEventListener('click', () => { setActive(tabImages); showPanels('images'); }); }
     if(tabQR){ tabQR.addEventListener('click', () => { setActive(tabQR); showPanels('qr'); }); }
     if(tabAI){ tabAI.addEventListener('click', () => { setActive(tabAI); showPanels('ai'); }); }
+    if(tabUpload){ tabUpload.addEventListener('click', () => { setActive(tabUpload); showPanels('upload'); }); }
 
     // Estado inicial: Imágenes activas
     if(tabImages){ setActive(tabImages); }
@@ -426,13 +431,26 @@
     });
   }
 
-  function onValveSelect(id){
+  async function onValveSelect(id){
     state.lastActivator = document.activeElement;
-    const v = state.map.get(id) || buildFallbackValveData([id + '.png'])[0];
-    if(!v.ref) v.ref = id; // asumir referencia = id
-    // En lugar de abrir modal, volcamos la selección en el sidebar persistente
-    renderSidebar(v);
-    // Cerrar modal si estuviera abierto por alguna razón
+    // Base: lo que haya en memoria o un fallback mínimo
+    let base = state.map.get(id) || { id: String(id), nombre: String(id) };
+    base.ref = base.ref || String(id);
+
+    // Intentar obtener detalle real desde backend
+    try{
+      const detail = await fetchValveDetail(String(id));
+      if(detail){
+        // Mantener la imagen portada previa si existe
+        const merged = { ...base, ...detail, imagen: base.imagen || detail.simbolo || '' };
+        renderSidebar(merged);
+      } else {
+        renderSidebar(base);
+      }
+    }catch(_){
+      renderSidebar(base);
+    }
+
     try{ closePanel(); }catch(_){}
   }
 
@@ -544,19 +562,73 @@
     if(!title || !body) return;
 
     // Título según selección (o "Detalle" si no hay selección)
-    if(data && (data.nombre || data.id)){
-      title.textContent = sanitize(data.nombre || data.id);
+    if(data && (data.numero_serie || data.valvula || data.nombre || data.id)){
+      if(data.numero_serie){
+        title.textContent = 'Numero de serie: ' + sanitize(data.numero_serie);
+      } else {
+        title.textContent = sanitize(data.valvula || data.nombre || data.id);
+      }
     } else {
       title.textContent = 'Detalle';
     }
 
-    // Estado vacío (placeholder). Más adelante se reemplazará con los campos reales.
     body.innerHTML = '';
-    const ph = document.createElement('div');
-    ph.className = 'subtitle';
-    ph.style.margin = '6px 0 8px';
-    ph.textContent = data ? 'Contenido pendiente: aquí irá la información de la válvula seleccionada.' : 'Selecciona una válvula para ver la información aquí.';
-    body.appendChild(ph);
+
+    if(!data){
+      const ph = document.createElement('div');
+      ph.className = 'subtitle';
+      ph.style.margin = '6px 0 8px';
+      ph.textContent = 'Selecciona una válvula para ver la información aquí.';
+      body.appendChild(ph);
+      return;
+    }
+
+    // Imagen/símbolo si existe
+    if(data.simbolo){
+      const imgWrap = document.createElement('div');
+      imgWrap.style.marginBottom = '10px';
+      const img = document.createElement('img');
+      img.src = data.simbolo;
+      img.alt = `${sanitize(data.nombre || data.id)} - símbolo`;
+      img.loading = 'lazy';
+      img.decoding = 'async';
+      img.style.maxWidth = '100%';
+      img.style.borderRadius = '8px';
+      img.addEventListener('error', () => { img.replaceWith(placeholderImage()); }, { passive:true });
+      imgWrap.appendChild(img);
+      body.appendChild(imgWrap);
+    }
+
+    // Lista de detalles
+    const dl = document.createElement('dl');
+    dl.className = 'details';
+
+    const addRow = (label, value, opts={}) => {
+      if(value == null || value === '') return;
+      const dt = document.createElement('dt');
+      dt.textContent = label;
+      const dd = document.createElement('dd');
+      if(opts.link){
+        const a = document.createElement('a');
+        a.href = String(value);
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        a.textContent = String(value);
+        dd.appendChild(a);
+      } else {
+        dd.textContent = String(value);
+      }
+      dl.append(dt, dd);
+    };
+
+    addRow('Válvula', data.valvula || data.nombre || data.id);
+    addRow('Cantidad', data.cantidad);
+    addRow('Ubicación', data.ubicacion);
+    addRow('# de serie', data.numero_serie || data.serie);
+    addRow('Ficha técnica', data.ficha_tecnica, { link: /^https?:\/\//i.test(String(data.ficha_tecnica||'')) });
+    addRow('Símbolo (ruta)', data.simbolo, { link: /^https?:\/\//i.test(String(data.simbolo||'')) });
+
+    body.appendChild(dl);
 
     // En pantallas pequeñas, hacer scroll al sidebar para que el usuario lo vea
     try{
@@ -598,6 +670,84 @@
     setupSearch();
     // Inicializar sidebar vacío
     renderSidebar(null);
+
+    // Setup upload handlers
+    setupUploadExcel();
+  }
+
+  // --- Upload Excel ---
+  function setupUploadExcel(){
+    const btn = document.getElementById('btnUploadExcel');
+    const input = document.getElementById('excelFile');
+    const result = document.getElementById('uploadResult');
+    if(!btn || !input) return;
+    btn.addEventListener('click', async () => {
+      result.textContent = '';
+      const file = input.files && input.files[0];
+      if(!file){ result.textContent = 'Selecciona un archivo Excel primero.'; return; }
+      try{
+        const fd = new FormData();
+        fd.append('file', file);
+        const res = await fetch(`${BACKEND}/valves/upload_excel`, { method:'POST', body: fd });
+        if(!res.ok){
+          const err = await res.json().catch(()=>({detail: res.statusText}));
+          throw new Error(err.detail || 'Error al subir');
+        }
+        const data = await res.json();
+        result.textContent = `Insertados: ${data.inserted}`;
+        // Tras subir, refrescar catálogo desde backend
+        const refreshed = await fetchValvesFromBackend();
+        if(refreshed && refreshed.length){
+          state.valvulas = refreshed;
+          renderMenu(state.valvulas);
+        }
+      }catch(e){
+        result.textContent = `Error: ${e.message || e}`;
+      }
+    });
+  }
+
+  async function fetchValvesFromBackend(){
+    try{
+      const res = await fetch(`${BACKEND}/valves`, { cache:'no-store' });
+      if(!res.ok) return null;
+      const data = await res.json();
+      if(!data || !Array.isArray(data.items)) return null;
+      // Adapt to front expected fields using new schema
+      // Prefer 'simbolo' as display image path
+      return data.items.map(r => ({
+        id: String(r.id),
+        nombre: r.valvula || r.nombre,
+        ubicacion: r.ubicacion,
+        imagen: r.simbolo || '',
+        // extras for sidebar/search if needed
+        cantidad: r.cantidad,
+        numero_serie: r.numero_serie || r.serie,
+        ficha_tecnica: r.ficha_tecnica,
+        simbolo: r.simbolo,
+        // backward compat fields
+        ref: String(r.id)
+      }));
+    }catch(_){ return null; }
+  }
+
+  async function fetchValveDetail(id){
+    try{
+      const url = `${BACKEND}/valves/${encodeURIComponent(id)}`;
+      const res = await fetch(url, { cache:'no-store' });
+      if(!res.ok) return null;
+      const r = await res.json();
+      // Normalizar a shape usado en sidebar
+      return {
+        id: String(r.id),
+        nombre: r.nombre,
+        cantidad: r.cantidad,
+        ubicacion: r.ubicacion,
+        serie: r.serie,
+        ficha_tecnica: r.ficha_tecnica,
+        simbolo: r.simbolo
+      };
+    }catch(_){ return null; }
   }
 
   // Exponer funciones principales para pruebas manuales en consola si se requiere

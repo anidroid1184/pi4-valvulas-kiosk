@@ -96,6 +96,13 @@ body{
 .sidebar-header{ padding:10px 12px; border-bottom:1px solid var(--border); }
 .sidebar-body{ padding:12px; color:var(--text); }
 
+/* Sidebar details list */
+.details{ display:grid; grid-template-columns: 1fr; gap:8px; }
+.details dt{ font-weight:600; color:#0f172a; font-size:.92rem; }
+.details dd{ margin:2px 0 10px 0; color:var(--muted); font-size:.92rem; }
+.details a{ color:#1d4ed8; text-decoration:none; word-break:break-all; }
+.details a:hover{ text-decoration:underline; }
+
 @media (max-width: 1023px){
   .layout{ grid-template-columns: 1fr; }
   .sidebar{ order: -1; position:relative; top:auto; max-height:none; }
