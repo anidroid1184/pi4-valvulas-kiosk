@@ -23,6 +23,8 @@
       window.ValvulasApp.onValveSelect(id);
     }
     setStatus(`Código detectado: ${text} → id: ${id}`);
+    // Ir a la pestaña de Inicio/Imágenes para ver la información
+    try{ showImagesTab(); }catch(_){}
     // Opcional: detener para evitar lecturas repetidas
     // if(qrActive) { closeCamera(); }
   }

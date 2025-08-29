@@ -11,3 +11,7 @@ uvicorn[standard]==0.29.0
 # Excel import
 openpyxl==3.1.5
 python-multipart==0.0.9
+
+# QR generation
+qrcode==7.4.2
+Pillow==10.4.0

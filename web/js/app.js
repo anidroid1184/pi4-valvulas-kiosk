@@ -457,13 +457,53 @@
   // Resolver de código escaneado a ID válido del catálogo
   function findValveId(code){
     if(!code) return null;
-    const raw = String(code);
-    if(state.map.has(raw)) return raw;
-    const lower = raw.toLowerCase();
-    if(state.map.has(lower)) return lower;
-    const sanitized = lower.replace(/[^a-z0-9_-]+/g,'-');
-    if(state.map.has(sanitized)) return sanitized;
-    // intento por nombre
+    const raw = String(code).trim();
+
+    // 1) Intentar parsear prefijos/URLs conocidos conservando el ID
+    //    Soporta: "VALVE:<id>", "valve://<id>", ".../valve/<id>", "...?id=<id>"
+    let extracted = null;
+    try{
+      // VALVE:123 o valve:123
+      let m = raw.match(/^valve:\s*([^\s?#/]+)$/i);
+      if(m && m[1]) extracted = m[1];
+
+      // valve://123
+      if(!extracted){
+        m = raw.match(/^valve:\/\/([^\s?#/]+)$/i);
+        if(m && m[1]) extracted = m[1];
+      }
+
+      // URL con /valve/<id>
+      if(!extracted){
+        m = raw.match(/\/valve\/([A-Za-z0-9_-]+)/i);
+        if(m && m[1]) extracted = m[1];
+      }
+
+      // URL/query con ?id=<id>
+      if(!extracted){
+        m = raw.match(/[?&]id=([A-Za-z0-9_-]+)/i);
+        if(m && m[1]) extracted = m[1];
+      }
+    }catch(_){ /* noop */ }
+
+    const candidates = [];
+    if(extracted){
+      candidates.push(extracted);
+    }
+    candidates.push(raw);
+
+    // Para cada candidato, probar variantes: tal cual, lower y saneado
+    for(const cand of candidates){
+      const c1 = cand;
+      const c2 = String(cand).toLowerCase();
+      const c3 = c2.replace(/[^a-z0-9_-]+/g,'-');
+      if(state.map.has(c1)) return c1;
+      if(state.map.has(c2)) return c2;
+      if(state.map.has(c3)) return c3;
+    }
+
+    // intento por nombre exacto (insensible a mayúsculas)
+    const lower = String(extracted || raw).toLowerCase();
     for(const [id, v] of state.map.entries()){
       if(String(v.nombre).toLowerCase() === lower){
         return id;
