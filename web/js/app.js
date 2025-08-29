@@ -601,12 +601,17 @@
     const body = document.getElementById('sidebarBody');
     if(!title || !body) return;
 
-    // Título según selección (o "Detalle" si no hay selección)
-    if(data && (data.numero_serie || data.valvula || data.nombre || data.id)){
-      if(data.numero_serie){
-        title.textContent = 'Numero de serie: ' + sanitize(data.numero_serie);
+    // Título: mostrar SIEMPRE el número de referencia arriba del todo (en negrilla la etiqueta)
+    if(data){
+      const ref = String(data.ref || data.id || '').trim();
+      if(ref){
+        // Render seguro sin innerHTML
+        title.innerHTML = '';
+        const strong = document.createElement('strong');
+        strong.textContent = 'Número de referencia:';
+        title.append(strong, document.createTextNode(' ' + sanitize(ref)));
       } else {
-        title.textContent = sanitize(data.valvula || data.nombre || data.id);
+        title.textContent = 'Detalle';
       }
     } else {
       title.textContent = 'Detalle';
@@ -661,7 +666,8 @@
       dl.append(dt, dd);
     };
 
-    addRow('Válvula', data.valvula || data.nombre || data.id);
+    // "Válvula" debe mostrar el nombre asignado en la base de datos, no el número
+    addRow('Válvula', (data.valvula || data.nombre || 'No especificado'));
     addRow('Cantidad', data.cantidad);
     addRow('Ubicación', data.ubicacion);
     addRow('# de serie', data.numero_serie || data.serie);
