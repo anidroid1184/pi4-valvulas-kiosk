@@ -666,8 +666,8 @@
       dl.append(dt, dd);
     };
 
-    // "Válvula" debe mostrar el nombre asignado en la base de datos, no el número
-    addRow('Válvula', (data.valvula || data.nombre || 'No especificado'));
+    // "Válvula" debe mostrar el nombre asignado en la base de datos; si no hay, caer a id como respaldo
+    addRow('Válvula', (data.valvula || data.nombre || data.id || 'No especificado'));
     addRow('Cantidad', data.cantidad);
     addRow('Ubicación', data.ubicacion);
     addRow('# de serie', data.numero_serie || data.serie);
@@ -763,7 +763,10 @@
       // Prefer 'simbolo' as display image path
       return data.items.map(r => ({
         id: String(r.id),
+        // nombre mostrado prioriza la columna 'valvula' de la BD
         nombre: r.valvula || r.nombre,
+        // conservar el campo original por si el sidebar lo requiere
+        valvula: r.valvula,
         ubicacion: r.ubicacion,
         imagen: r.simbolo || '',
         // extras for sidebar/search if needed
@@ -786,12 +789,15 @@
       // Normalizar a shape usado en sidebar
       return {
         id: String(r.id),
-        nombre: r.nombre,
+        // usar la columna 'valvula' como nombre principal
+        nombre: r.valvula || r.nombre,
+        valvula: r.valvula,
         cantidad: r.cantidad,
         ubicacion: r.ubicacion,
-        serie: r.serie,
+        numero_serie: r.numero_serie || r.serie,
         ficha_tecnica: r.ficha_tecnica,
-        simbolo: r.simbolo
+        simbolo: r.simbolo,
+        ref: String(r.id)
       };
     }catch(_){ return null; }
   }
