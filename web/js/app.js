@@ -628,53 +628,147 @@
       return;
     }
 
-    // Imagen/símbolo si existe
+    // Tarjeta estructurada según orden: Válvula → Número de guía → Ficha → Símbolo → Ficha técnica
+    const card = document.createElement('article');
+    card.className = 'valve-card fade-in hover-float';
+
+    // Header con título
+    const head = document.createElement('header');
+    head.className = 'valve-card__header';
+    const h3 = document.createElement('h3');
+    h3.className = 'valve-card__title';
+    h3.textContent = String(data.valvula || data.nombre || data.id || 'Válvula');
+    head.appendChild(h3);
+
+    // Body con secciones
+    const wrap = document.createElement('div');
+    wrap.className = 'valve-card__body';
+
+    // Helper para íconos SVG (sprite offline)
+    const ICON_SPRITE = 'STATIC/IMG/icons.svg';
+    function icon(id){
+      try{
+        const svgNS = 'http://www.w3.org/2000/svg';
+        const xlinkNS = 'http://www.w3.org/1999/xlink';
+        const svg = document.createElementNS(svgNS, 'svg');
+        svg.setAttribute('class','icon lg');
+        const use = document.createElementNS(svgNS, 'use');
+        // Compatibilidad: setear href y xlink:href
+        use.setAttribute('href', `${ICON_SPRITE}#${id}`);
+        try{ use.setAttributeNS(xlinkNS, 'href', `${ICON_SPRITE}#${id}`); }catch(_){ }
+        svg.appendChild(use);
+        return svg;
+      }catch(_){ return null; }
+    }
+
+    // 1) Válvula (nombre)
+    const secValve = document.createElement('section');
+    secValve.className = 'valve-section';
+    const secValveH = document.createElement('h3');
+    secValveH.textContent = 'Válvula';
+    const icValve = icon('icon-valve'); if(icValve) secValveH.prepend(icValve);
+    const kv1 = document.createElement('dl');
+    kv1.className = 'kv';
+    const dt1 = document.createElement('dt'); dt1.textContent = 'Nombre';
+    const dd1 = document.createElement('dd'); dd1.textContent = String(data.valvula || data.nombre || data.id || 'No especificado');
+    kv1.append(dt1, dd1);
+    secValve.append(secValveH, kv1);
+
+    // 2) Número de guía (usar ref o id)
+    const secGuide = document.createElement('section');
+    secGuide.className = 'valve-section';
+    const secGuideH = document.createElement('h3');
+    secGuideH.textContent = 'Número de guía';
+    const icGuide = icon('icon-guide'); if(icGuide) secGuideH.prepend(icGuide);
+    const kv2 = document.createElement('dl'); kv2.className = 'kv';
+    const dt2 = document.createElement('dt'); dt2.textContent = 'Guía';
+    const dd2 = document.createElement('dd'); dd2.textContent = String(data.ref || data.id || '—');
+    kv2.append(dt2, dd2);
+    secGuide.append(secGuideH, kv2);
+
+    // 3) Ficha: mini especificación (Cantidad, Ubicación, # de serie)
+    const secFicha = document.createElement('section');
+    secFicha.className = 'valve-section';
+    const secFichaH = document.createElement('h3'); secFichaH.textContent = 'Ficha';
+    const icList = icon('icon-list'); if(icList) secFichaH.prepend(icList);
+    const kv3 = document.createElement('dl'); kv3.className = 'kv';
+    const addKV = (label, value) => {
+      if(value == null || value === '') return;
+      const dtx = document.createElement('dt'); dtx.textContent = label;
+      const ddx = document.createElement('dd'); ddx.textContent = String(value);
+      kv3.append(dtx, ddx);
+    };
+    addKV('Cantidad', data.cantidad);
+    // Ubicaciones como chips (si hay múltiples separadas por coma o /)
+    if(data.ubicacion){
+      const dtu = document.createElement('dt'); dtu.textContent = 'Ubicación';
+      const ddu = document.createElement('dd');
+      const chipsWrap = document.createElement('div');
+      chipsWrap.style.display = 'flex';
+      chipsWrap.style.flexWrap = 'wrap';
+      chipsWrap.style.gap = '6px';
+      const parts = String(data.ubicacion).split(/[\/,|;]+/).map(s=>s.trim()).filter(Boolean);
+      if(parts.length === 0){ parts.push(String(data.ubicacion)); }
+      for(const p of parts){
+        const chip = document.createElement('span');
+        chip.className = 'chip';
+        chip.textContent = p;
+        chipsWrap.appendChild(chip);
+      }
+      ddu.appendChild(chipsWrap);
+      kv3.append(dtu, ddu);
+    }
+    addKV('# de serie', data.numero_serie || data.serie);
+    secFicha.append(secFichaH, kv3);
+
+    // 4) Símbolo (imagen si existe)
     if(data.simbolo){
-      const imgWrap = document.createElement('div');
-      imgWrap.style.marginBottom = '10px';
+      const secSymbol = document.createElement('section');
+      secSymbol.className = 'valve-section';
+      const secSymbolH = document.createElement('h3'); secSymbolH.textContent = 'Símbolo';
+      const icSym = icon('icon-symbol'); if(icSym) secSymbolH.prepend(icSym);
       const img = document.createElement('img');
+      img.className = 'valve-card__symbol';
       img.src = data.simbolo;
       img.alt = `${sanitize(data.nombre || data.id)} - símbolo`;
       img.loading = 'lazy';
       img.decoding = 'async';
-      img.style.maxWidth = '100%';
-      img.style.borderRadius = '8px';
       img.addEventListener('error', () => { img.replaceWith(placeholderImage()); }, { passive:true });
-      imgWrap.appendChild(img);
-      body.appendChild(imgWrap);
+      secSymbol.append(secSymbolH, img);
+      wrap.appendChild(secSymbol);
     }
 
-    // Lista de detalles
-    const dl = document.createElement('dl');
-    dl.className = 'details';
-
-    const addRow = (label, value, opts={}) => {
-      if(value == null || value === '') return;
-      const dt = document.createElement('dt');
-      dt.textContent = label;
-      const dd = document.createElement('dd');
-      if(opts.link){
+    // 5) Ficha técnica (enlace si es URL)
+    if(data.ficha_tecnica){
+      const secFT = document.createElement('section');
+      secFT.className = 'valve-section';
+      const secFTH = document.createElement('h3'); secFTH.textContent = 'Ficha técnica';
+      const icFile = icon('icon-file'); if(icFile) secFTH.prepend(icFile);
+      const p = document.createElement('p');
+      const isUrl = /^https?:\/\//i.test(String(data.ficha_tecnica||''));
+      if(isUrl){
         const a = document.createElement('a');
-        a.href = String(value);
+        a.href = String(data.ficha_tecnica);
         a.target = '_blank';
         a.rel = 'noopener noreferrer';
-        a.textContent = String(value);
-        dd.appendChild(a);
+        a.className = 'valve-card__link';
+        a.textContent = String(data.ficha_tecnica);
+        p.appendChild(a);
       } else {
-        dd.textContent = String(value);
+        p.textContent = String(data.ficha_tecnica);
       }
-      dl.append(dt, dd);
-    };
+      secFT.append(secFTH, p);
+      wrap.appendChild(secFT);
+    }
 
-    // "Válvula" debe mostrar el nombre asignado en la base de datos; si no hay, caer a id como respaldo
-    addRow('Válvula', (data.valvula || data.nombre || data.id || 'No especificado'));
-    addRow('Cantidad', data.cantidad);
-    addRow('Ubicación', data.ubicacion);
-    addRow('# de serie', data.numero_serie || data.serie);
-    addRow('Ficha técnica', data.ficha_tecnica, { link: /^https?:\/\//i.test(String(data.ficha_tecnica||'')) });
-    addRow('Símbolo (ruta)', data.simbolo, { link: /^https?:\/\//i.test(String(data.simbolo||'')) });
+    // Añadir secciones en orden definido
+    wrap.prepend(secFicha); // ya contiene ubicaciones y cantidad
+    wrap.prepend(secGuide);
+    wrap.prepend(secValve);
 
-    body.appendChild(dl);
+    // Ensamblar y render
+    card.append(head, wrap);
+    body.appendChild(card);
 
     // En pantallas pequeñas, hacer scroll al sidebar para que el usuario lo vea
     try{
