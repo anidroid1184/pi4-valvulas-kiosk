@@ -1,15 +1,15 @@
 /* Base */
 :root{
-  /* Brand palette (cliente) */
-  --c-900:#0D1B2A; /* más oscuro */
-  --c-700:#1B263B; /* oscuro medio */
-  --c-500:#415A77; /* principal */
-  --c-300:#778DA9; /* claro medio */
-  --c-200:#E0E1DD; /* claro base */
+  /* Brand palette (cliente) - paleta azul anterior */
+  --c-900:#004173; /* azul profundo */
+  --c-700:#0979b0; /* azul medio */
+  --c-500:#0cb7f2; /* celeste vivo */
+  --c-300:#7cdaf9; /* celeste claro */
+  --c-200:#b6ffff; /* aqua muy claro */
 
   /* Theme tokens */
-  /* Fondo plano (sin degradado) usando paleta */
-  --bg: var(--c-200); /* fondo plano claro */
+  /* Fondo plano blanco (minimalista) */
+  --bg: #ffffff; /* base blanca */
   /* Degradado de fondo multi-capa para mayor contraste en kiosko */
   --bg-grad: 
     /* Capa 1: radial inferior para base de color */
@@ -24,24 +24,24 @@
   --danger:#ef4444;
   --overlay:rgba(0,0,0,.4);
   --border:#e2e8f0;
-  /* Tints derivadas para fondos suaves (ajustadas a la nueva paleta) */
-  --tint-500: rgba(65,90,119,.16);   /* de --c-500 */
-  --tint-300: rgba(119,141,169,.22); /* de --c-300 */
-  --tint-300-strong: rgba(119,141,169,.32);
-  --tint-700: rgba(27,38,59,.18);    /* de --c-700 */
-  --tint-900: rgba(13,27,42,.10);    /* de --c-900 */
+  /* Tints derivadas para fondos suaves (paleta azul) */
+  --tint-500: rgba(12,183,242,.12);  /* de --c-500 (más suave) */
+  --tint-300: rgba(124,218,249,.20); /* de --c-300 (más suave) */
+  --tint-300-strong: rgba(124,218,249,.30);
+  --tint-700: rgba(9,121,176,.18);   /* de --c-700 */
+  --tint-900: rgba(0,65,115,.12);    /* de --c-900 */
 }
 *{box-sizing:border-box}
-html,body{height:100%}
+html,body{height:100%; background:var(--bg)}
 body{
   margin:0;
-  background:var(--bg); /* color plano */
+  background:var(--bg); /* color plano: blanco */
   color:var(--text);
   font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif;
 }
 
 /* Header */
-.app-header{padding:28px 20px 24px;border-bottom:1px solid var(--border);text-align:center;background:var(--c-700)}
+.app-header{padding:28px 20px 24px;border-bottom:1px solid var(--border);text-align:center;background:var(--c-500)}
 .app-header h1{
   margin:0;
   font-size:2rem;
@@ -129,18 +129,18 @@ body{
 .sidebar-body{ padding:12px; color:var(--text); }
 
 /* Valve card (tarjeta de válvula en sidebar) */
-.valve-card{ border-radius:14px; overflow:hidden; box-shadow:0 6px 18px rgba(0,0,0,.08); border:1px solid var(--border); background:#fff; }
+.valve-card{ border-radius:12px; overflow:hidden; box-shadow:0 4px 12px rgba(0,0,0,.06); border:1px solid var(--border); background:#fff; }
 .valve-card__header{ background:var(--c-500); color:#fff; padding:14px 16px; }
 .valve-card__title{ margin:0; font-size:1.15rem; font-weight:700; letter-spacing:.2px; }
 .valve-card__body{ padding:14px; display:grid; gap:12px; }
-.valve-section{ background:var(--tint-300); border:1px solid var(--border); border-radius:12px; padding:12px; }
+.valve-section{ background:#ffffff; border:1px solid var(--border); border-radius:10px; padding:12px; }
 .valve-section h3{
   margin:0 0 8px;
   font-size:1rem;
   color:var(--c-900);
   background: var(--tint-500);
   padding:8px 10px;
-  border-radius:10px;
+  border-radius:8px;
   border:1px solid var(--border);
   display:flex; align-items:center; gap:8px;
 }
