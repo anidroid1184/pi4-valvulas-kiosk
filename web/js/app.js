@@ -11,6 +11,7 @@
   // Config
   const IMAGE_FOLDER = 'STATIC/IMG/card-photos/'; // carpeta para portadas por referencia
   const IMAGE_LIST_JSON = IMAGE_FOLDER + 'index.json'; // formato: { images: ["file1.jpg", ...] }
+  const BANKS_JSON = IMAGE_FOLDER + 'banks.json'; // opcional: { "152860": "A", ... } o [{id,banco,ubicacion}]
   const FORCE_LEGACY_STATIC = true; // forzar carga desde index.json de card-photos
   const METADATA_JSON = 'valvulas.json'; // opcional en raíz de landing
   const BACKEND = 'http://localhost:8000';
@@ -20,7 +21,9 @@
     valvulas: [],
     map: new Map(),
     lastActivator: null,
-    imagesIndex: null // { ref: [files...] }
+    imagesIndex: null, // { ref: [files...] }
+    bankFilters: new Set(), // bancos activos (A/B/C/D)
+    hasBankData: false // true si alguna válvula tiene banco detectable
   };
 
   // Precalentamiento
@@ -52,6 +55,58 @@
       if(/BANC?O\s*D\b/.test(s) || /\bBANK\s*D\b/.test(s) || s === 'D'){ return 'D'; }
     }
     return null;
+  }
+
+  // Devuelve un conjunto de bancos inferidos para una válvula
+  function getValveBanks(v){
+    const out = new Set();
+    const b = getBank(v);
+    if(b) out.add(b);
+    const fields = [v?.ubicacion, v?.notas, v?.nombre].filter(Boolean);
+    for(const f of fields){
+      const s = String(f).toUpperCase();
+      if(/\bA\b/.test(s) || /BANC?O\s*A\b/.test(s)) out.add('A');
+      if(/\bB\b/.test(s) || /BANC?O\s*B\b/.test(s)) out.add('B');
+      if(/\bC\b/.test(s) || /BANC?O\s*C\b/.test(s)) out.add('C');
+      if(/\bD\b/.test(s) || /BANC?O\s*D\b/.test(s)) out.add('D');
+    }
+    return out;
+  }
+
+  function datasetHasBankData(list){
+    try{
+      const arr = Array.isArray(list) ? list : state.valvulas;
+      for(const v of arr){ if(getValveBanks(v).size) return true; }
+      return false;
+    }catch(_){ return false; }
+  }
+
+  // Aplica filtros combinados: texto + bancos
+  function applyFilters(query){
+    const q = String(query || '').trim().toLowerCase();
+    let list = state.valvulas || [];
+
+    const canFilterByBank = state.hasBankData || datasetHasBankData(list);
+    if(canFilterByBank && state.bankFilters && state.bankFilters.size){
+      list = list.filter(v => {
+        const vbanks = getValveBanks(v);
+        for(const b of vbanks){ if(state.bankFilters.has(b)) return true; }
+        return false;
+      });
+    }
+
+    if(q){
+      list = list.filter(v => {
+        const ref = String(v.ref || v.id || '').toLowerCase();
+        const nom = String(v.nombre || '').toLowerCase();
+        const ubi = String(v.ubicacion || '').toLowerCase();
+        return ref.includes(q) || nom.includes(q) || ubi.includes(q);
+      });
+    }
+
+    const countEl = document.getElementById('searchCount');
+    if(countEl){ countEl.textContent = (q || (state.bankFilters && state.bankFilters.size)) ? `${list.length} resultados` : ''; }
+    renderMenu(list);
   }
 
   // Normaliza URLs por si un índice antiguo incluye subcarpetas espurias como "images/"
@@ -262,26 +317,41 @@
       timer = setTimeout(fn, 140);
     };
 
-    function apply(q){
-      const query = String(q || '').trim().toLowerCase();
-      let list = state.valvulas || [];
-      if(query){
-        list = list.filter(v => {
-          const ref = (v.ref || v.id || '').toLowerCase();
-          const nom = (v.nombre || '').toLowerCase();
-          return ref.includes(query) || nom.includes(query);
-        });
-      }
-      renderMenu(list);
-      if(countEl){ countEl.textContent = query ? `${list.length} resultados` : ''; }
-    }
-
+    const apply = (q) => applyFilters(q);
     input.addEventListener('input', () => debounce(() => apply(input.value)));
     input.addEventListener('keydown', (e) => { if(e.key === 'Escape'){ input.value=''; apply(''); input.blur(); } });
     if(btnClear){ btnClear.addEventListener('click', () => { input.value=''; apply(''); input.focus(); }); }
 
     // Primera carga sin filtro
     apply('');
+  }
+
+  // Chips para filtrar por banco A/B/C/D
+  function setupBankFilters(){
+    const wrap = document.getElementById('bankFilters');
+    const input = document.getElementById('searchBox');
+    if(!wrap) return;
+    const banks = ['A','B','C','D'];
+    for(const b of banks){
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = `chip chip--bank chip--bank${b}`;
+      chip.textContent = b;
+      chip.setAttribute('aria-pressed', 'false');
+      chip.addEventListener('click', () => {
+        if(state.bankFilters.has(b)){
+          state.bankFilters.delete(b);
+          chip.classList.remove('is-active');
+          chip.setAttribute('aria-pressed','false');
+        } else {
+          state.bankFilters.add(b);
+          chip.classList.add('is-active');
+          chip.setAttribute('aria-pressed','true');
+        }
+        applyFilters(input ? input.value : '');
+      });
+      wrap.appendChild(chip);
+    }
   }
 
   // Carga de metadatos desde valvulas.json (si existe)
@@ -834,15 +904,106 @@
     }
 
     state.valvulas = catalog;
+    state.hasBankData = datasetHasBankData(catalog);
     renderMenu(catalog);
     setStatus('');
     setupNavbar();
     setupSearch();
+    setupBankFilters();
     // Inicializar sidebar vacío
     renderSidebar(null);
 
     // Setup upload handlers
     setupUploadExcel();
+
+    // Cargar mapeo local de bancos si existe (no bloqueante)
+    try{
+      const bankMap = await loadBanksMapping();
+      if(bankMap){
+        let changed = false;
+        state.valvulas = (state.valvulas || []).map(item => {
+          const key = String(item.ref || item.id || '').trim();
+          const m = bankMap.get(key);
+          if(!m) return item;
+          changed = true;
+          return {
+            ...item,
+            banco: m.banco || m.bank || m.code || m.letter || m.value || item.banco,
+            ubicacion: m.ubicacion ?? item.ubicacion
+          };
+        });
+        if(changed){
+          state.hasBankData = datasetHasBankData(state.valvulas);
+          applyFilters(document.getElementById('searchBox')?.value || '');
+        }
+      }
+    }catch(_){ /* opcional */ }
+
+    // Enriquecer catálogo con metadatos del backend (banco/ubicación) sin tocar imagenes
+    try{
+      const backendItems = await fetchValvesFromBackend();
+      if(Array.isArray(backendItems) && backendItems.length){
+        const byId = new Map();
+        const byRef = new Map();
+        for(const r of backendItems){
+          byId.set(String(r.id), r);
+          if(r.ref) byRef.set(String(r.ref), r);
+        }
+        let changed = false;
+        state.valvulas = (state.valvulas || []).map(item => {
+          const id = String(item.ref || item.id);
+          const b = byId.get(id) || byRef.get(id);
+          if(!b) return item;
+          // Mantener portada actual (item.imagen)
+          const merged = {
+            ...item,
+            nombre: b.valvula || b.nombre || item.nombre,
+            valvula: b.valvula || item.valvula,
+            ubicacion: b.ubicacion ?? item.ubicacion,
+            banco: b.banco || b.bank || item.banco,
+            // mantener simbolo para sidebar si está disponible, pero no tocar imagen de la tarjeta
+            simbolo: b.simbolo || item.simbolo,
+            ref: String(b.ref || b.id || item.ref || item.id),
+            id: String(b.id || item.id)
+          };
+          changed = true;
+          return merged;
+        });
+        state.hasBankData = datasetHasBankData(state.valvulas);
+        if(changed){
+          const q = (document.getElementById('searchBox')?.value) || '';
+          applyFilters(q);
+          // no recrear chips; solo re-filtrar
+        }
+      }
+    }catch(_){ /* opcional: silenciar si backend no está */ }
+  }
+
+  // Cargar banks.json si existe y devolver Map(id -> {banco, ubicacion})
+  async function loadBanksMapping(){
+    try{
+      const res = await fetch(BANKS_JSON, { cache:'no-store' });
+      if(!res.ok) return null;
+      const data = await res.json();
+      const map = new Map();
+      if(Array.isArray(data)){
+        for(const it of data){
+          if(!it) continue;
+          const id = String(it.ref || it.id || '').trim();
+          if(!id) continue;
+          map.set(id, { banco: it.banco || it.bank, ubicacion: it.ubicacion });
+        }
+      } else if(data && typeof data === 'object'){
+        // objeto plano {"152860":"A", ...} o { map: { id: banco } }
+        const obj = data.map && typeof data.map === 'object' ? data.map : data;
+        for(const [k, v] of Object.entries(obj)){
+          if(!k) continue;
+          if(v && typeof v === 'object') map.set(String(k), { banco: v.banco || v.bank, ubicacion: v.ubicacion });
+          else map.set(String(k), { banco: String(v).toUpperCase() });
+        }
+      }
+      return map.size ? map : null;
+    }catch(_){ return null; }
   }
 
   // --- Upload Excel ---

@@ -262,6 +262,13 @@ body{
 .chip--bankB{ background:var(--bankB-bg); color:var(--bankB-dark); border-color: var(--bankB); }
 .chip--bankC{ background:var(--bankC-bg); color:var(--bankC-dark); border-color: var(--bankC); }
 .chip--bankD{ background:var(--bankD-bg); color:var(--bankD-dark); border-color: var(--bankD); }
+.chip.is-active{ box-shadow: 0 0 0 2px currentColor inset, 0 2px 8px rgba(0,0,0,.08); }
+
+/* Filtros por banco al lado del buscador */
+.search-bar{ display:flex; align-items:center; gap:8px; flex-wrap:wrap }
+.search-bar #searchBox{ flex: 1 1 260px; }
+.bank-filters{ display:flex; align-items:center; gap:6px; flex-wrap:wrap }
+.bank-filters .chip{ cursor:pointer; user-select:none }
 .placeholder{
   width:100%;height:220px;display:flex;align-items:center;justify-content:center;
   background:#f1f5f9;border-radius:8px;color:var(--muted);font-size:.85rem;border:1px dashed #cbd5e1
@@ -352,6 +359,13 @@ video{display:block;width:100%;height:auto}
   .nav-toggle{display:none}
   .nav-items{display:flex}
   .grid{grid-template-columns:repeat(2,1fr)}
+}
+
+/* Ajustes móviles: evitar solape del sticky nav y mejorar el wrapping */
+@media (max-width:640px){
+  .app-nav{ position:static; top:auto; }
+  .search-bar{ max-width:100%; }
+  .bank-filters{ width:100%; justify-content:center; }
 }
 @media (min-width:1024px){
   .grid{grid-template-columns:repeat(3,1fr)}
