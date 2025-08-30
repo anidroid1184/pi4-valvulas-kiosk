@@ -1,11 +1,11 @@
 /* Base */
 :root{
-  /* Brand palette (nueva) */
-  --c-900:#30343F; /* dark neutral */
-  --c-700:#1E2749; /* dark navy (header principal) */
-  --c-500:#273469; /* navy (headers secundarios) */
-  --c-300:#E4D9FF; /* lavender light */
-  --c-200:#FAFAFF; /* off-white base */
+  /* Brand palette (Fresh Greens) */
+  --c-900:#081C15; /* deep green black */
+  --c-700:#2D6A4F; /* header principal */
+  --c-500:#40916C; /* acentos/botones */
+  --c-300:#B7E4C7; /* tint claro */
+  --c-200:#D8F3DC; /* surface off-white verdoso */
 
   /* Theme tokens */
   /* Fondo plano blanco (pedido del usuario) */
@@ -25,11 +25,11 @@
   --overlay:rgba(0,0,0,.4);
   --border:#e2e8f0;
   /* Tints derivadas (suaves) */
-  --tint-300: rgba(228,217,255,.28); /* de --c-300 */
-  --tint-300-strong: rgba(228,217,255,.42);
-  --tint-500: rgba(39,52,105,.10);   /* de --c-500 */
-  --tint-700: rgba(30,39,73,.16);    /* de --c-700 */
-  --tint-900: rgba(48,52,63,.10);    /* de --c-900 */
+  --tint-300: rgba(183,228,199,.28); /* de --c-300 */
+  --tint-300-strong: rgba(183,228,199,.44);
+  --tint-500: rgba(64,145,108,.12);  /* de --c-500 */
+  --tint-700: rgba(45,106,79,.16);   /* de --c-700 */
+  --tint-900: rgba(8,28,21,.12);     /* de --c-900 */
 }
 *{box-sizing:border-box}
 html,body{height:100%; background:var(--bg)}
