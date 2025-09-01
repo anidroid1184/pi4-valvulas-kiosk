@@ -36,3 +36,7 @@ Aplicación Tkinter en modo kiosko para buscar válvulas por QR o manualmente. O
 - Integrar escaneo QR real (`pyzbar/opencv`).
 - Compresión de imágenes al importar.
 - Modo kiosko (auto-start) en Raspberry Pi.
+
+## Documentación
+- Novedades AI (visión offline): `docs/AI_Novedades.md`
+- Novedades Frontend (demo web): `docs/FRONTEND_Novedades.md`
