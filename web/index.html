@@ -21,7 +21,8 @@
     <div id="navItems" class="nav-items" role="menubar">
       <button id="btnTabImages" class="nav-btn" type="button" role="menuitem">Imágenes</button>
       <button id="btnTabQR" class="nav-btn" type="button" role="menuitem">Lector QR</button>
-      <button id="btnTabAI" class="nav-btn" type="button" role="menuitem">Modelo AI</button>
+      <button id="btnTabAIRecognize" class="nav-btn" type="button" role="menuitem">Reconocer con AI</button>
+      <button id="btnTabAITrain" class="nav-btn" type="button" role="menuitem">Entrenar AI</button>
       <button id="btnTabUpload" class="nav-btn" type="button" role="menuitem">Cargar Excel</button>
     </div>
   </nav>
@@ -73,10 +74,10 @@
           </div>
         </section>
 
-        <!-- Modelo AI / Reconocimiento por imagen (guía de encuadre) -->
-        <section id="aiPanel" class="ai-panel" aria-label="Reconocimiento por IA" hidden>
+        <!-- Reconocer con AI / Reconocimiento por imagen (guía de encuadre) -->
+        <section id="aiPanel" class="ai-panel" aria-label="Reconocer con IA" hidden>
           <div class="camera-header">
-            <h2 class="camera-title">Modelo AI - Reconocimiento de Válvulas</h2>
+            <h2 class="camera-title">Reconocer con IA - Válvulas</h2>
           </div>
           <div class="camera-body">
             <div class="camera-wrap">
@@ -95,6 +96,33 @@
             <button id="btnAICapture" class="nav-btn" type="button" disabled>Capturar y reconocer</button>
           </div>
           <div class="ai-result" id="aiResult" aria-live="polite"></div>
+        </section>
+
+        <!-- Entrenar AI / Búsqueda y captura de múltiples fotos -->
+        <section id="aiTrainPanel" class="ai-panel" aria-label="Entrenar IA" hidden>
+          <div class="camera-header">
+            <h2 class="camera-title">Entrenar IA</h2>
+          </div>
+          <div class="camera-body">
+            <div class="search-bar" role="search">
+              <label for="aiTrainSearch" class="sr-only">Buscar por nombre o número de serie</label>
+              <input id="aiTrainSearch" type="search" autocomplete="off" placeholder="Buscar por nombre o número de serie…" aria-label="Buscar por nombre o número de serie">
+              <button id="btnAiTrainClear" type="button" class="nav-btn" aria-label="Limpiar búsqueda">Limpiar</button>
+              <span id="aiTrainSearchCount" class="subtitle" aria-live="polite"></span>
+            </div>
+            <div id="aiTrainResults" class="grid" role="list" aria-label="Resultados de búsqueda"></div>
+            <div class="camera-wrap" style="margin-top:12px">
+              <video id="aiTrainVideo" autoplay playsinline muted></video>
+              <canvas id="aiTrainCanvas" hidden></canvas>
+            </div>
+          </div>
+          <div class="camera-footer">
+            <button id="btnAiTrainStart" class="nav-btn" type="button">Iniciar cámara</button>
+            <button id="btnAiTrainStop" class="nav-btn" type="button" hidden>Detener cámara</button>
+            <button id="btnAiTrainCapture" class="nav-btn" type="button" disabled>Capturar (30s)</button>
+            <span id="aiTrainTimer" class="subtitle" style="margin-left:8px"></span>
+          </div>
+          <div class="ai-result" id="aiTrainLivePrediction" aria-live="polite"></div>
         </section>
 
         <!-- Carga de Excel -->

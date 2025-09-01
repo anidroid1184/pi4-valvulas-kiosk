@@ -251,15 +251,17 @@
     // Tabs principales: Imágenes, Lector QR (usa cameraPanel), Modelo AI
     const tabImages = document.getElementById('btnTabImages');
     const tabQR = document.getElementById('btnTabQR');
-    const tabAI = document.getElementById('btnTabAI');
+    const tabAIRecognize = document.getElementById('btnTabAIRecognize');
+    const tabAITrain = document.getElementById('btnTabAITrain');
     const tabUpload = document.getElementById('btnTabUpload');
     const imagesPanel = document.getElementById('imagesPanel');
     const cameraPanel = document.getElementById('cameraPanel');
-    const aiPanel = document.getElementById('aiPanel');
+    const aiPanel = document.getElementById('aiPanel'); // reconocer con IA
+    const aiTrainPanel = document.getElementById('aiTrainPanel');
     const uploadPanel = document.getElementById('uploadPanel');
 
     function setActive(tab){
-      for(const el of [tabImages, tabQR, tabAI, tabUpload]){
+      for(const el of [tabImages, tabQR, tabAIRecognize, tabAITrain, tabUpload]){
         if(!el) continue;
         const active = el === tab;
         el.classList.toggle('active', active);
@@ -279,18 +281,21 @@
         cameraPanel.hidden = true;
       }
       if(aiPanel) aiPanel.hidden = true;
+      if(aiTrainPanel) aiTrainPanel.hidden = true;
       if(uploadPanel) uploadPanel.hidden = true;
 
       // Show target
       if(target === 'images' && imagesPanel) imagesPanel.hidden = false;
       if(target === 'qr' && cameraPanel) cameraPanel.hidden = false;
-      if(target === 'ai' && aiPanel) aiPanel.hidden = false;
+      if(target === 'ai-recognize' && aiPanel) aiPanel.hidden = false;
+      if(target === 'ai-train' && aiTrainPanel) aiTrainPanel.hidden = false;
       if(target === 'upload' && uploadPanel) uploadPanel.hidden = false;
     }
 
     if(tabImages){ tabImages.addEventListener('click', () => { setActive(tabImages); showPanels('images'); }); }
     if(tabQR){ tabQR.addEventListener('click', () => { setActive(tabQR); showPanels('qr'); }); }
-    if(tabAI){ tabAI.addEventListener('click', () => { setActive(tabAI); showPanels('ai'); }); }
+    if(tabAIRecognize){ tabAIRecognize.addEventListener('click', () => { setActive(tabAIRecognize); showPanels('ai-recognize'); }); }
+    if(tabAITrain){ tabAITrain.addEventListener('click', () => { setActive(tabAITrain); showPanels('ai-train'); }); }
     if(tabUpload){ tabUpload.addEventListener('click', () => { setActive(tabUpload); showPanels('upload'); }); }
 
     // Estado inicial: Imágenes activas
