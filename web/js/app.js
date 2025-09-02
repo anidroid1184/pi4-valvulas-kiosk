@@ -221,7 +221,6 @@
         const expanded = navToggle.getAttribute('aria-expanded') === 'true';
         navToggle.setAttribute('aria-expanded', String(!expanded));
       });
-      // Cerrar al seleccionar una opción en móviles
       navItems.addEventListener('click', (e) => {
         const target = e.target;
         if(target && target.matches && target.matches('button.nav-btn')){
@@ -232,22 +231,23 @@
 
     const btnOpen = document.getElementById('btnAbrirCam');
     const btnClose = document.getElementById('btnCerrarCam');
-
     if(btnOpen){ btnOpen.addEventListener('click', openCamera); }
     if(btnClose){ btnClose.addEventListener('click', closeCamera); }
 
-    // Tabs principales: Imágenes, Lector QR (usa cameraPanel), Modelo AI
+    // Tabs principales: Imágenes, Lector QR, Reconocer AI, Entrenar AI, Cargar Excel
     const tabImages = document.getElementById('btnTabImages');
     const tabQR = document.getElementById('btnTabQR');
-    const tabAI = document.getElementById('btnTabAI');
+    const tabAIRecognize = document.getElementById('btnTabAIRecognize');
+    const tabAITrain = document.getElementById('btnTabAITrain');
     const tabUpload = document.getElementById('btnTabUpload');
     const imagesPanel = document.getElementById('imagesPanel');
     const cameraPanel = document.getElementById('cameraPanel');
     const aiPanel = document.getElementById('aiPanel');
+    const aiTrainPanel = document.getElementById('aiTrainPanel');
     const uploadPanel = document.getElementById('uploadPanel');
 
     function setActive(tab){
-      for(const el of [tabImages, tabQR, tabAI, tabUpload]){
+      for(const el of [tabImages, tabQR, tabAIRecognize, tabAITrain, tabUpload]){
         if(!el) continue;
         const active = el === tab;
         el.classList.toggle('active', active);
@@ -257,28 +257,24 @@
     }
 
     function showPanels(target){
-      // Hide all
+      // Ocultar todos
       if(imagesPanel) imagesPanel.hidden = true;
-      if(cameraPanel) {
-        // Si abandonamos la cámara, cerrarla para liberar recursos
-        if(!cameraPanel.hidden && target !== 'qr'){
-          closeCamera();
-        }
-        cameraPanel.hidden = true;
-      }
+      if(cameraPanel) cameraPanel.hidden = true;
       if(aiPanel) aiPanel.hidden = true;
+      if(aiTrainPanel) aiTrainPanel.hidden = true;
       if(uploadPanel) uploadPanel.hidden = true;
-
-      // Show target
+      // Mostrar el seleccionado
       if(target === 'images' && imagesPanel) imagesPanel.hidden = false;
       if(target === 'qr' && cameraPanel) cameraPanel.hidden = false;
       if(target === 'ai' && aiPanel) aiPanel.hidden = false;
+      if(target === 'aitrain' && aiTrainPanel) aiTrainPanel.hidden = false;
       if(target === 'upload' && uploadPanel) uploadPanel.hidden = false;
     }
 
     if(tabImages){ tabImages.addEventListener('click', () => { setActive(tabImages); showPanels('images'); }); }
     if(tabQR){ tabQR.addEventListener('click', () => { setActive(tabQR); showPanels('qr'); }); }
-    if(tabAI){ tabAI.addEventListener('click', () => { setActive(tabAI); showPanels('ai'); }); }
+    if(tabAIRecognize){ tabAIRecognize.addEventListener('click', () => { setActive(tabAIRecognize); showPanels('ai'); }); }
+    if(tabAITrain){ tabAITrain.addEventListener('click', () => { setActive(tabAITrain); showPanels('aitrain'); }); }
     if(tabUpload){ tabUpload.addEventListener('click', () => { setActive(tabUpload); showPanels('upload'); }); }
 
     // Estado inicial: Imágenes activas
