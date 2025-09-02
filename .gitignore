@@ -1,11 +1,7 @@
 # Ignorar documentación/tareas locales
 Lista de tareas especificas.md
-# <<<<<<< HEAD
 .venv
 descartado/
 docs/
-# =======
-# .venv
-# >>>>>>> parent of 8b255ff (Filtro de ubicaciones listo)
-styles-conflictivo.css
-app-conflictivo.js
+styles.css
+app.js
