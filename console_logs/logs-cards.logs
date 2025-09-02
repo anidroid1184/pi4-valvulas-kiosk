@@ -1,0 +1,59 @@
+cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation cdn.tailwindcss.com:64:1711
+GET
+http://127.0.0.1:5500/favicon.ico
+[HTTP/1 404 File not found 0ms]
+
+XHRGET
+http://127.0.0.1:5500/valvulas.json
+[HTTP/1 404 File not found 6ms]
+
+[IMG] legacy ok. count= 32 app.js:367:26
+[INIT] catalog size = 32 app.js:910:18
+[RENDER] items in = 32 filtered = 32 2 app.js:444:18
+permitir pegar
+Uncaught SyntaxError: unexpected token: identifier debugger eval code:1:10
+fetch('STATIC/IMG/card-photos/index.json', { cache: 'no-store' })
+  .then(r => r.ok ? r.json() : Promise.reject(r.status))
+  .then(j => console.log('legacy index.json:', j))
+  .catch(console.error);
+Promise { <state>: "pending" }
+
+legacy index.json: 
+Object { images: (32) […] }
+debugger eval code:3:22
+fetch('http://127.0.0.1:8000/images_index', { cache: 'no-store' })
+  .then(r => r.ok ? r.json() : Promise.reject(r.status))
+  .then(j => console.log('/images_index:', j))
+  .catch(console.error);
+Promise { <state>: "pending" }
+
+/images_index: 
+Object { items: (18) […] }
+debugger eval code:3:22
+ValvulasApp.discoverImagesFromFolder()
+  .then(x => console.log('discoverImagesFromFolder()', x.length, x.slice(0,3)))
+  .catch(console.error);
+Promise { <state>: "pending" }
+
+[IMG] legacy ok. count= 32 app.js:367:26
+discoverImagesFromFolder() 32 
+Array(3) [ {…}, {…}, {…} ]
+debugger eval code:2:22
+document.querySelectorAll('#grid .card').length
+32
+document.getElementById('status')?.textContent
+"Cámara cv2 lista"
+ValvulasApp.initApp();
+XHRGET
+http://127.0.0.1:5500/valvulas.json
+[HTTP/1 404 File not found 5ms]
+
+Promise { <state>: "pending" }
+
+[IMG] legacy ok. count= 32 app.js:367:26
+[INIT] catalog size = 32 app.js:910:18
+[RENDER] items in = 32 filtered = 32 2 app.js:444:18
+document.getElementById('imagesPanel')?.hidden
+false
+document.getElementById('imagesPanel')?.hidden
+true

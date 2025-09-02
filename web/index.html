@@ -118,6 +118,11 @@
             <div class="camera-wrap" style="margin-top:12px">
               <video id="aiTrainVideo" autoplay playsinline muted hidden></video>
               <img id="aiTrainMJPEG" alt="AI Train stream" />
+              <!-- Overlay guía para AI Train (rectángulo 4:3 centrado) -->
+              <div class="overlay-guide" aria-hidden="true">
+                <div class="frame rect-4x3" role="img" aria-label="Marco de encuadre 4:3"></div>
+                <div class="guide-text" id="aiTrainGuideText">Centra la válvula dentro del marco</div>
+              </div>
               <canvas id="aiTrainCanvas" hidden></canvas>
             </div>
             <div id="aiTrainSelectedInfo" class="subtitle" style="margin-top:8px">Entrenando referencia: —</div>
