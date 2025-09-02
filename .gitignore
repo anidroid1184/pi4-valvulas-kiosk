@@ -1,8 +1,5 @@
 # Ignorar documentación/tareas locales
-Lista de tareas especificas.md
+# Lista de tareas especificas.md
 .venv
 descartado/
-docs/
-styles.css
-app.js
 

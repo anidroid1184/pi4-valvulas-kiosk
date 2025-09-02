@@ -36,17 +36,33 @@
     });
   }
 
-  // Filtra válvulas por bancos activos
+  // Filtra válvulas por bancos activos (robusto: letras A-D o números 1-4)
   function filterValvulasByBank(valvulas) {
     if (!activeBanks.size) return valvulas;
+    const mapDigitToBank = { '1':'A', '2':'B', '3':'C', '4':'D' };
     return valvulas.filter(v => {
+      // 1) Intentar con getBank() (letra, número o alfanumérico)
+      const b = getBank(v);
+      if (b && activeBanks.has(b)) return true;
+
+      // 2) Fallback: inspeccionar tokens de ubicacion
       let ubicaciones = [];
       if (Array.isArray(v.ubicacion)) {
         ubicaciones = v.ubicacion;
       } else if (typeof v.ubicacion === 'string') {
         ubicaciones = v.ubicacion.split(/[,;\s]+/).map(s => s.trim()).filter(Boolean);
       }
-      return ubicaciones.some(ub => ub && activeBanks.has(ub.charAt(0).toUpperCase()));
+      for (const ub of ubicaciones) {
+        if(!ub) continue;
+        const s = String(ub).toUpperCase();
+        // número 1-4
+        const m = s.match(/^([1-4])\b/);
+        if (m && activeBanks.has(mapDigitToBank[m[1]])) return true;
+        // primera letra
+        const ch = s.charAt(0);
+        if ('ABCD'.includes(ch) && activeBanks.has(ch)) return true;
+      }
+      return false;
     });
   }
   'use strict';
@@ -84,15 +100,23 @@
   // o intenta inferirlo desde 'nombre', 'ubicacion', 'notas' o 'id/ref'.
   function getBank(v){
     if(!v) return null;
+    const mapDigitToBank = { '1':'A', '2':'B', '3':'C', '4':'D' };
     let raw = v.banco || v.bank || '';
     if(typeof raw === 'string' && raw.trim()){ raw = raw.trim().toUpperCase(); }
     const tryFields = [raw, v.nombre, v.ubicacion, v.notas, v.id, v.ref].filter(Boolean);
     for(const f of tryFields){
       const s = String(f).toUpperCase();
-      if(/BANC?O\s*A\b/.test(s) || /\bBANK\s*A\b/.test(s) || s === 'A'){ return 'A'; }
-      if(/BANC?O\s*B\b/.test(s) || /\bBANK\s*B\b/.test(s) || s === 'B'){ return 'B'; }
-      if(/BANC?O\s*C\b/.test(s) || /\bBANK\s*C\b/.test(s) || s === 'C'){ return 'C'; }
-      if(/BANC?O\s*D\b/.test(s) || /\bBANK\s*D\b/.test(s) || s === 'D'){ return 'D'; }
+      // 1) Coincidencias directas por letra
+      if(/\bBANC?O\s*A\b/.test(s) || /\bBANK\s*A\b/.test(s) || s === 'A'){ return 'A'; }
+      if(/\bBANC?O\s*B\b/.test(s) || /\bBANK\s*B\b/.test(s) || s === 'B'){ return 'B'; }
+      if(/\bBANC?O\s*C\b/.test(s) || /\bBANK\s*C\b/.test(s) || s === 'C'){ return 'C'; }
+      if(/\bBANC?O\s*D\b/.test(s) || /\bBANK\s*D\b/.test(s) || s === 'D'){ return 'D'; }
+      // 2) Coincidencias por número 1-4 (mapear a A-D)
+      const num = s.match(/\b(?:BANC?O|BANK)?\s*([1-4])\b/);
+      if(num && mapDigitToBank[num[1]]){ return mapDigitToBank[num[1]]; }
+      // 3) Tokens alfanuméricos que comienzan con A/B/C/D (ej: A12, C-03)
+      const first = s.trim().charAt(0);
+      if(first && 'ABCD'.includes(first)){ return first; }
     }
     return null;
   }
