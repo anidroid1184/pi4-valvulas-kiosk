@@ -257,17 +257,17 @@
     }
 
     function showPanels(target){
-      // Ocultar todos
-      if(imagesPanel) imagesPanel.hidden = true;
+      // Regla: imagesPanel y aiTrainPanel siempre visibles
+      if(imagesPanel) imagesPanel.hidden = false;
+      if(aiTrainPanel) aiTrainPanel.hidden = false;
+
+      // Los demás paneles se controlan por target
       if(cameraPanel) cameraPanel.hidden = true;
       if(aiPanel) aiPanel.hidden = true;
-      if(aiTrainPanel) aiTrainPanel.hidden = true;
       if(uploadPanel) uploadPanel.hidden = true;
-      // Mostrar el seleccionado
-      if(target === 'images' && imagesPanel) imagesPanel.hidden = false;
+
       if(target === 'qr' && cameraPanel) cameraPanel.hidden = false;
       if(target === 'ai' && aiPanel) aiPanel.hidden = false;
-      if(target === 'aitrain' && aiTrainPanel) aiTrainPanel.hidden = false;
       if(target === 'upload' && uploadPanel) uploadPanel.hidden = false;
     }
 
@@ -284,7 +284,7 @@
     }
     if(tabUpload){ tabUpload.addEventListener('click', () => { setActive(tabUpload); showPanels('upload'); try{ if(window.AITrainCam){ window.AITrainCam.stopAITrainCamera?.(); } }catch(_){ } }); }
 
-    // Estado inicial: Imágenes activas
+    // Estado inicial: ambas vistas visibles
     if(tabImages){ setActive(tabImages); }
     showPanels('images');
   }

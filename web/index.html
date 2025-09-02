@@ -58,7 +58,8 @@
           </div>
         </section>
 
-        <!-- Cámara / Vista previa (guía QR/Barcode) -->
+        <!-- Cámara / Vista previa (no utilizada) -->
+        <!--
         <section id="cameraPanel" class="camera-panel" aria-label="Vista previa de cámara" hidden>
           <div class="camera-header">
             <h2 class="camera-title">Cámara</h2>
@@ -66,7 +67,6 @@
           <div class="camera-body">
             <div class="camera-wrap">
               <div id="qr-reader"></div>
-              <!-- Overlay guía para QR/Barcode -->
               <div class="overlay-guide" aria-hidden="true">
                 <div class="frame center-box"></div>
                 <div class="guide-text" id="qrGuideText">Coloca el QR o código de barras dentro del marco</div>
@@ -79,8 +79,10 @@
             <span class="subtitle" style="margin-left:8px">Vista previa sin escaneo</span>
           </div>
         </section>
+        -->
 
-        <!-- Reconocer con AI / Reconocimiento por imagen (guía de encuadre) -->
+        <!-- Reconocer con AI (no utilizado) -->
+        <!--
         <section id="aiPanel" class="ai-panel" aria-label="Reconocer con IA" hidden>
           <div class="camera-header">
             <h2 class="camera-title">Reconocer con IA - Válvulas</h2>
@@ -90,8 +92,7 @@
               <video id="aiVideo" autoplay playsinline muted></video>
               <div class="overlay-guide" aria-hidden="true">
                 <div class="frame center-box"></div>
-                <div class="guide-text" id="aiGuideText">Alinea la válvula dentro del marco. Acércate o aléjate hasta que se
-                  vea nítida.</div>
+                <div class="guide-text" id="aiGuideText">Alinea la válvula dentro del marco. Acércate o aléjate hasta que se vea nítida.</div>
               </div>
             </div>
             <canvas id="aiCanvas" hidden></canvas>
@@ -103,6 +104,7 @@
           </div>
           <div class="ai-result" id="aiResult" aria-live="polite"></div>
         </section>
+        -->
 
         <!-- Entrenar AI / Búsqueda y captura de múltiples fotos -->
         <section id="aiTrainPanel" class="ai-panel" aria-label="Entrenar IA" hidden>
