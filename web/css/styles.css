@@ -1,3 +1,31 @@
+/* Chips circulares para filtros de banco */
+.bank-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 3px solid #e2e8f0;
+  background: #f9fafb;
+  font-weight: 700;
+  font-size: 1 rem;
+  margin-right: 12px;
+  margin-bottom: 4px;
+  cursor: pointer;
+  transition: border-color 0.18s, box-shadow 0.18s, background 0.18s;
+  box-shadow: none;
+  outline: none;
+}
+.bank-chip.selected {
+  box-shadow: 0 0 0 2.5px #2222, 0 2px 8px #0001;
+  border-width: 3px;
+}
+.bank-chip.bank-A { border-color: #F4D947; color: #C9B200; background: #FFFBEA; }
+.bank-chip.bank-B { border-color: #7FBEEB; color: #3A7CA5; background: #F0F8FF; }
+.bank-chip.bank-C { border-color: #E73636; color: #B91C1C; background: #FFF0F0; }
+.bank-chip.bank-D { border-color: #50B95A; color: #218838; background: #F0FFF4; }
+.bank-chip:focus { outline: 2px solid #2563EB; }
 /* Base */
 :root{
   /* Brand palette (Nordic Ocean - personalizada) */

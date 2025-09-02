@@ -6,6 +6,46 @@
 */
 
 (() => {
+  // Colores de bancos y clases para chips
+  const BANK_COLORS = {
+    A: '#F4D947',
+    B: '#7FBEEB',
+    C: '#E73636',
+    D: '#50B95A'
+  };
+  let activeBanks = new Set();
+  // Renderiza los botones de filtro por banco
+  function renderBankFilters() {
+    const container = document.getElementById('bankFilters');
+    if (!container) return;
+    // Asume que los chips ya existen en el HTML
+    const chips = container.querySelectorAll('.bank-chip');
+    chips.forEach(chip => {
+      const bank = chip.textContent.trim();
+      chip.classList.toggle('selected', activeBanks.has(bank));
+      chip.setAttribute('aria-pressed', activeBanks.has(bank));
+      chip.onclick = () => {
+        if (activeBanks.has(bank)) {
+          activeBanks.delete(bank);
+        } else {
+          activeBanks.add(bank);
+        }
+        renderBankFilters();
+        renderMenu(filterValvulasByBank(state.valvulas));
+      };
+    });
+  }
+
+  // Filtra válvulas por bancos activos
+  function filterValvulasByBank(valvulas) {
+    if (!activeBanks.size) return valvulas;
+    return valvulas.filter(v => {
+      // Buscar ubicaciones tipo "A1", "B2", etc. en v.ubicacion
+      const ubicaciones = (v.ubicacion || v.ubicaciones || '').toString().split(/[,;\s]+/).map(s => s.trim()).filter(Boolean);
+      // Si alguna ubicación empieza con una de las letras seleccionadas, mostrar
+      return ubicaciones.some(ub => activeBanks.has(ub.charAt(0).toUpperCase()));
+    });
+  }
   'use strict';
 
   // Config
@@ -370,7 +410,10 @@
     const grid = document.getElementById('grid');
     grid.innerHTML = '';
 
-    if(!valvulas || !valvulas.length){
+    // Aplica filtro por banco
+    const filtered = filterValvulasByBank(valvulas);
+
+    if(!filtered || !filtered.length){
       // Mensaje discreto dentro del grid
       const empty = document.createElement('div');
       empty.className = 'empty';
@@ -382,7 +425,7 @@
     const frag = document.createDocumentFragment();
 
     let idx = 0;
-    for(const v of valvulas){
+    for(const v of filtered){
       state.map.set(v.id, v);
 
       const card = document.createElement('div');
@@ -394,17 +437,13 @@
       if(v.ref){ card.dataset.ref = v.ref; }
 
       const img = document.createElement('img');
-      // Carga ansiosa de portadas
+      // Carga ansiosa de portadas, pero forzamos recarga si la imagen cambia
       img.loading = 'eager';
-      if(idx < HIGH_PRIORITY_FIRST){ try{ img.fetchPriority = 'high'; }catch(_){} }
-      img.decoding = 'async';
-      img.src = v.imagen;
+      img.src = v.imagen + '?t=' + Date.now(); // Forzar recarga si se reemplazó la imagen
       img.alt = `${sanitize(v.nombre)} (${v.id})`;
       img.addEventListener('error', () => {
         img.replaceWith(placeholderImage());
       }, { passive:true });
-
-      // (Colores por banco ahora se muestran en chips de Ubicación del sidebar)
 
       const title = document.createElement('div');
       title.className = 'title';
@@ -430,6 +469,10 @@
 
     grid.appendChild(frag);
   }
+  // Inicializar filtros al cargar
+  window.addEventListener('DOMContentLoaded', () => {
+    renderBankFilters();
+  });
 
   function placeholderImage(){
     const ph = document.createElement('div');

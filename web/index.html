@@ -46,7 +46,15 @@
             <input id="searchBox" type="search" autocomplete="off" placeholder="Buscar por referencia o nombre…" aria-label="Buscar por referencia o nombre">
             <button id="btnClearSearch" type="button" class="nav-btn" aria-label="Limpiar búsqueda">Limpiar</button>
             <span id="searchCount" class="subtitle" aria-live="polite"></span>
+            <span id="bankFilters" class="bank-filters" style="margin-left:18px;vertical-align:middle;">
+              <button type="button" class="bank-chip bank-A" aria-pressed="false" title="Filtrar por banco A">A</button>
+              <button type="button" class="bank-chip bank-B" aria-pressed="false" title="Filtrar por banco B">B</button>
+              <button type="button" class="bank-chip bank-C" aria-pressed="false" title="Filtrar por banco C">C</button>
+              <button type="button" class="bank-chip bank-D" aria-pressed="false" title="Filtrar por banco D">D</button>
+            </span>
           </div>
+          <!-- Filtros por banco -->
+          <div id="bankFilters" class="bank-filters" style="display:flex;gap:10px;margin:10px 0 18px 0;"></div>
           <div id="grid" class="grid" role="list"></div>
         </section>
 
