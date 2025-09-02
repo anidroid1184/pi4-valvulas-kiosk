@@ -79,7 +79,11 @@
     valvulas: [],
     map: new Map(),
     lastActivator: null,
-    imagesIndex: null // { ref: [files...] }
+    imagesIndex: null, // { ref: [files...] }
+    aiTrain: {
+      index: [], // [{id, image, count}]
+      selectedRef: null,
+    }
   };
 
   // Precalentamiento
@@ -340,6 +344,99 @@
     el.textContent = msg || '';
   }
 
+  // --- AI Train: cargar índice desde backend y búsqueda local ---
+  async function loadTrainIndex(){
+    try{
+      const url = BACKEND.replace(/\/$/, '') + '/images_index';
+      const res = await fetch(url, { cache:'no-store' });
+      if(!res.ok) return [];
+      const payload = await res.json();
+      const items = Array.isArray(payload?.items) ? payload.items : [];
+      state.aiTrain.index = items;
+      return items;
+    }catch(_){ return []; }
+  }
+
+  function renderAiTrainResults(list){
+    const grid = document.getElementById('aiTrainResults');
+    if(!grid) return;
+    grid.innerHTML = '';
+    if(!list || !list.length){
+      const empty = document.createElement('div');
+      empty.className = 'empty';
+      empty.textContent = 'Sin resultados';
+      grid.appendChild(empty);
+      return;
+    }
+    const frag = document.createDocumentFragment();
+    for(const it of list){
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.setAttribute('role','button');
+      card.setAttribute('tabindex','0');
+      card.dataset.ref = it.id;
+      const img = document.createElement('img');
+      img.src = BACKEND.replace(/\/$/, '') + it.image; // e.g., /images/<ref>/file.jpg
+      img.alt = `Ref ${it.id}`;
+      img.loading = 'lazy';
+      const title = document.createElement('div');
+      title.className = 'title';
+      title.textContent = `${it.id} (${it.count})`;
+      card.append(img, title);
+      addActivationHandlers(card, () => selectAiTrainRef(it.id));
+      if(state.aiTrain.selectedRef === it.id){ card.classList.add('selected'); }
+      frag.appendChild(card);
+    }
+    grid.appendChild(frag);
+  }
+
+  function selectAiTrainRef(ref){
+    state.aiTrain.selectedRef = String(ref);
+    // Re-render para marcar seleccionado
+    const q = document.getElementById('aiTrainSearch')?.value || '';
+    applyAiTrainSearch(q);
+    setStatus(`Referencia seleccionada para entrenamiento: ${state.aiTrain.selectedRef}`);
+    // Actualizar línea informativa bajo la cámara
+    const info = document.getElementById('aiTrainSelectedInfo');
+    if(info){ info.textContent = `Entrenando referencia: ${state.aiTrain.selectedRef}`; }
+    // Iniciar cámara automáticamente si está disponible
+    try{
+      if(window.AITrainCam && typeof window.AITrainCam.startAITrainCamera === 'function'){
+        window.AITrainCam.startAITrainCamera();
+      }
+      const vid = document.getElementById('aiTrainVideo');
+      if(vid && typeof vid.scrollIntoView === 'function'){
+        vid.scrollIntoView({ behavior:'smooth', block:'center' });
+      }
+    }catch(_){ /* noop */ }
+  }
+
+  function applyAiTrainSearch(query){
+    const q = String(query || '').trim().toLowerCase();
+    const countEl = document.getElementById('aiTrainSearchCount');
+    let list = state.aiTrain.index || [];
+    if(q){
+      list = list.filter(it => String(it.id).toLowerCase().includes(q));
+    }
+    renderAiTrainResults(list);
+    if(countEl) countEl.textContent = q ? `${list.length} resultados` : '';
+  }
+
+  async function setupAiTrainSearch(){
+    const input = document.getElementById('aiTrainSearch');
+    const btnClear = document.getElementById('btnAiTrainClear');
+    if(!input) return;
+    if(!state.aiTrain.index || !state.aiTrain.index.length){
+      await loadTrainIndex();
+    }
+    let timer = null;
+    const debounce = (fn) => { clearTimeout(timer); timer = setTimeout(fn, 140); };
+    input.addEventListener('input', () => debounce(() => applyAiTrainSearch(input.value)));
+    input.addEventListener('keydown', (e) => { if(e.key === 'Escape'){ input.value=''; applyAiTrainSearch(''); input.blur(); } });
+    if(btnClear){ btnClear.addEventListener('click', () => { input.value=''; applyAiTrainSearch(''); input.focus(); }); }
+    applyAiTrainSearch('');
+  }
+
   // --- Búsqueda en la pestaña Imágenes ---
   function setupSearch(){
     const input = document.getElementById('searchBox');
@@ -548,6 +645,7 @@
   // Inicializar filtros al cargar
   window.addEventListener('DOMContentLoaded', () => {
     renderBankFilters();
+    setupAiTrainSearch();
   });
 
   function placeholderImage(){
@@ -1058,6 +1156,13 @@
     initApp, loadMetadata, discoverImagesFromFolder, buildFallbackValveData,
     renderMenu, onValveSelect, renderPanel, closePanel, sanitize, findValveId,
     openCamera, closeCamera, renderSidebar
+  };
+
+  // Expose AI Train selection to camera.js
+  window.AITrain = {
+    getSelectedRef: () => state.aiTrain.selectedRef,
+    setSelectedRef: (ref) => selectAiTrainRef(ref),
+    refreshIndex: () => loadTrainIndex().then(() => applyAiTrainSearch(document.getElementById('aiTrainSearch')?.value || '')),
   };
 
   document.addEventListener('DOMContentLoaded', initApp, { once:true });

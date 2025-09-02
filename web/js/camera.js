@@ -8,6 +8,10 @@
   // AI camera stream (getUserMedia)
   let mediaStream = null;
   let aiStream = null;
+  // AI Train camera stream and loop
+  let aiTrainStream = null;
+  let aiTrainRunning = false;
+  let aiTrainAbort = false;
 
   function setStatus(msg){
     const el = document.getElementById('status');
@@ -99,10 +103,23 @@
     const images = document.getElementById('imagesPanel');
     const camera = document.getElementById('cameraPanel');
     const ai = document.getElementById('aiPanel');
+    const aiTrain = document.getElementById('aiTrainPanel');
     if(images) images.hidden = true;
     if(camera){ camera.hidden = true; if(!camera.hidden){ closeCamera(); } }
     if(ai) ai.hidden = false;
+    if(aiTrain) aiTrain.hidden = true;
     startAICamera();
+  }
+
+  function showAITrainTab(){
+    const images = document.getElementById('imagesPanel');
+    const camera = document.getElementById('cameraPanel');
+    const ai = document.getElementById('aiPanel');
+    const aiTrain = document.getElementById('aiTrainPanel');
+    if(images) images.hidden = true;
+    if(camera){ camera.hidden = true; if(!camera.hidden){ closeCamera(); } }
+    if(ai){ ai.hidden = true; if(aiStream){ stopAICamera(); } }
+    if(aiTrain) aiTrain.hidden = false;
   }
 
   // Conservado por compatibilidad pero no se usa con html5-qrcode
@@ -297,20 +314,27 @@
     const btnClose = document.getElementById('btnCerrarCam');
     const btnTabImages = document.getElementById('btnTabImages');
     const btnTabQR = document.getElementById('btnTabQR');
-    const btnTabCamera = document.getElementById('btnTabCamera');
-    const btnTabAI = document.getElementById('btnTabAI');
+    const btnTabAIRecognize = document.getElementById('btnTabAIRecognize');
+    const btnTabAITrain = document.getElementById('btnTabAITrain');
     const btnAIStart = document.getElementById('btnAIStart');
     const btnAIStop = document.getElementById('btnAIStop');
     const btnAICapture = document.getElementById('btnAICapture');
+    const btnAiTrainStart = document.getElementById('btnAiTrainStart');
+    const btnAiTrainStop = document.getElementById('btnAiTrainStop');
+    const btnAiTrainCapture = document.getElementById('btnAiTrainCapture');
     if(btnOpen) btnOpen.addEventListener('click', openCamera);
     if(btnClose) btnClose.addEventListener('click', closeCamera);
     if(btnTabImages) btnTabImages.addEventListener('click', showImagesTab);
     if(btnTabQR) btnTabQR.addEventListener('click', showCameraTab);
-    if(btnTabCamera) btnTabCamera.addEventListener('click', showCameraTab);
-    if(btnTabAI) btnTabAI.addEventListener('click', showAITab);
+    if(btnTabAIRecognize) btnTabAIRecognize.addEventListener('click', showAITab);
+    if(btnTabAITrain) btnTabAITrain.addEventListener('click', showAITrainTab);
     if(btnAIStart) btnAIStart.addEventListener('click', startAICamera);
     if(btnAIStop) btnAIStop.addEventListener('click', stopAICamera);
     if(btnAICapture) btnAICapture.addEventListener('click', captureAndRecognize);
+
+    if(btnAiTrainStart) btnAiTrainStart.addEventListener('click', startAITrainCamera);
+    if(btnAiTrainStop) btnAiTrainStop.addEventListener('click', stopAITrainCamera);
+    if(btnAiTrainCapture) btnAiTrainCapture.addEventListener('click', startAITrainingCapture);
   }
 
   document.addEventListener('DOMContentLoaded', init, { once:true });
@@ -318,4 +342,111 @@
   // Expose for manual testing if needed
   window.CameraQR = { open: openCamera, close: closeCamera, isActive: () => qrActive };
   window.CameraDemo = { openCamera, closeCamera, showImagesTab, showCameraTab, showAITab, startAICamera, stopAICamera, captureAndRecognize };
+  
+  // ---- AI Train implementation ----
+  async function startAITrainCamera(){
+    try{
+      if(aiTrainStream) return;
+      const video = document.getElementById('aiTrainVideo');
+      const btnStart = document.getElementById('btnAiTrainStart');
+      const btnStop = document.getElementById('btnAiTrainStop');
+      const btnCap = document.getElementById('btnAiTrainCapture');
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio:false });
+      aiTrainStream = stream;
+      if(video) video.srcObject = stream;
+      if(btnStart) btnStart.hidden = true;
+      if(btnStop) btnStop.hidden = false;
+      if(btnCap) btnCap.disabled = false;
+      setStatus('Cámara de entrenamiento lista');
+    }catch(err){
+      console.error(err);
+      setStatus('No fue posible acceder a la cámara (Entrenar)');
+    }
+  }
+
+  function stopAITrainCamera(){
+    try{
+      const video = document.getElementById('aiTrainVideo');
+      const btnStart = document.getElementById('btnAiTrainStart');
+      const btnStop = document.getElementById('btnAiTrainStop');
+      const btnCap = document.getElementById('btnAiTrainCapture');
+      aiTrainAbort = true;
+      aiTrainRunning = false;
+      if(aiTrainStream){
+        for(const t of aiTrainStream.getTracks()) t.stop();
+        aiTrainStream = null;
+      }
+      if(video) video.srcObject = null;
+      if(btnStart) btnStart.hidden = false;
+      if(btnStop) btnStop.hidden = true;
+      if(btnCap) btnCap.disabled = true;
+      setStatus('');
+    }catch(_){/* noop */}
+  }
+
+  async function startAITrainingCapture(){
+    const ref = (window.AITrain && typeof window.AITrain.getSelectedRef === 'function') ? window.AITrain.getSelectedRef() : null;
+    if(!ref){ setStatus('Selecciona una referencia en la lista de arriba antes de capturar.'); return; }
+    const video = document.getElementById('aiTrainVideo');
+    const canvas = document.getElementById('aiTrainCanvas');
+    const btnCap = document.getElementById('btnAiTrainCapture');
+    const btnStop = document.getElementById('btnAiTrainStop');
+    const timerEl = document.getElementById('aiTrainTimer');
+    if(!video || !canvas || !aiTrainStream){ setStatus('La cámara no está lista.'); return; }
+
+    aiTrainAbort = false;
+    aiTrainRunning = true;
+    let sent = 0;
+    let failed = 0;
+    const total = 60; // 2 fps * 30s
+    const startTs = Date.now();
+    if(btnCap) btnCap.disabled = true;
+    if(btnStop) btnStop.disabled = false;
+    updateTimer();
+
+    // Early stop on Stop button
+    const stopHandler = () => { aiTrainAbort = true; };
+    if(btnStop) btnStop.addEventListener('click', stopHandler, { once: true });
+
+    for(let i=0; i<total && !aiTrainAbort; i++){
+      try{
+        const w = video.videoWidth || 640;
+        const h = video.videoHeight || 480;
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, w, h);
+        const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.9));
+        const form = new FormData();
+        form.append('ref', String(ref));
+        form.append('image', blob, `frame_${String(i).padStart(2,'0')}.jpg`);
+        const r = await fetch('http://localhost:8000/train/upload', { method:'POST', body: form });
+        if(!r.ok){ failed++; } else { sent++; }
+      }catch(err){ console.error(err); failed++; }
+      updateTimer();
+      // Esperar 500ms entre capturas para ~2 fps
+      await new Promise(r => setTimeout(r, 500));
+    }
+
+    // Finalizar
+    try{
+      const fin = await fetch('http://localhost:8000/train/finalize', { method:'POST' });
+      if(fin.ok){ setStatus(`Entrenamiento completado: ${sent}/${total} imágenes subidas${failed?`, ${failed} fallidas`:''}. Índice actualizado.`); }
+      else { setStatus(`Capturas: ${sent}/${total}. Error al reindexar: ${fin.status}`); }
+    }catch(err){ setStatus(`Capturas: ${sent}/${total}. No se pudo reindexar.`); }
+
+    aiTrainRunning = false;
+    if(btnCap) btnCap.disabled = false;
+    if(timerEl) timerEl.textContent = '';
+
+    function updateTimer(){
+      if(!timerEl) return;
+      const elapsed = Math.round((Date.now() - startTs)/1000);
+      const mm = String(Math.floor(elapsed/60)).padStart(2,'0');
+      const ss = String(elapsed%60).padStart(2,'0');
+      timerEl.textContent = `${sent}/${total} subidas • ${mm}:${ss}`;
+    }
+  }
+
+  // expose for debugging
+  window.AITrainCam = { startAITrainCamera, stopAITrainCamera, startAITrainingCapture };
 })();

@@ -271,6 +271,21 @@ body{
 .card .title{margin-top:8px;font-size:.95rem;color:var(--text)}
 .card .subtitle{margin:2px 0 0;font-size:.8rem;color:var(--muted)}
 
+/* AI Train: hover/selected visual para cards de resultados */
+#aiTrainResults .card{ border-color: var(--border); }
+#aiTrainResults .card:hover{ 
+  border-color: var(--c-500);
+  box-shadow: 0 0 0 3px rgba(37,99,235,.25), var(--shadow-lg);
+}
+#aiTrainResults .card:focus{ box-shadow: 0 0 0 3px rgba(37,99,235,.45), var(--shadow-lg); }
+#aiTrainResults .card.selected{
+  border-color: var(--c-500);
+  box-shadow: 0 0 0 3px rgba(37,99,235,.35), 0 6px 18px rgba(37,99,235,.18);
+}
+
+/* Línea informativa bajo la cámara de entrenamiento */
+#aiTrainSelectedInfo{ color: var(--c-700); }
+
 /* Bank pill overlay en cards */
 .bank-pill{
   position:absolute; top:8px; left:8px; z-index:2;
