@@ -484,7 +484,16 @@
       subtitle.textContent = 'Toca para ver detalles';
 
       card.append(img, title, subtitle);
-      addActivationHandlers(card, () => onValveSelect(v.id));
+      // Al seleccionar una card: fija la referencia para entrenamiento y abre el detalle
+      addActivationHandlers(card, () => {
+        try{
+          const ref = v.ref || v.id;
+          if(ref && window.AITrain && typeof window.AITrain.setSelectedRef === 'function'){
+            window.AITrain.setSelectedRef(String(ref), String(v.nombre||ref));
+          }
+        }catch(_){/* noop */}
+        onValveSelect(v.id);
+      });
 
       // Precalentar imágenes del carrusel al pasar el mouse o enfocar
       if(v.ref){
@@ -920,6 +929,23 @@
     // Setup upload handlers
     setupUploadExcel();
   }
+
+  // ---- AI Train selection helper ----
+  (function initAITrainHelper(){
+    const api = {
+      _selectedRef: null,
+      setSelectedRef(ref, name){
+        this._selectedRef = String(ref || '').trim() || null;
+        const info = document.getElementById('aiTrainSelectedInfo');
+        if(info){
+          info.textContent = this._selectedRef ? `Entrenando referencia: ${name || this._selectedRef}` : 'Entrenando referencia: —';
+        }
+        try{ console.debug('[AITrain] selectedRef =', this._selectedRef); }catch(_){ }
+      },
+      getSelectedRef(){ return this._selectedRef; }
+    };
+    window.AITrain = api;
+  })();
 
   // --- Upload Excel ---
   function setupUploadExcel(){
