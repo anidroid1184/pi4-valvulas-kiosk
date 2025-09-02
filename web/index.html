@@ -130,6 +130,15 @@
               <canvas id="aiTrainCanvas" hidden></canvas>
             </div>
             <div id="aiTrainSelectedInfo" class="subtitle" style="margin-top:8px">Entrenando referencia: —</div>
+            <div class="sidebar-extra">
+              <div class="train-progress">
+                <h4>Progreso de entrenamiento</h4>
+                <div class="progress" aria-label="Progreso de subida de imágenes" role="progressbar" aria-valuemin="0" aria-valuemax="100">
+                  <div id="aiTrainProgressFill" class="progress__fill" style="width:0%"></div>
+                </div>
+                <div id="aiTrainProgressMeta" class="progress__meta">0/60 subidas • 00:00</div>
+              </div>
+            </div>
           </div>
           <div class="camera-footer">
             <button id="btnAiTrainStart" class="nav-btn" type="button">Iniciar cámara</button>
