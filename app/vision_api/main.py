@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, HTTPException, Form
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional, List
@@ -8,12 +8,14 @@ import cv2
 from pyzbar.pyzbar import decode as zbar_decode
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
+from datetime import datetime
 
 from app.config import IMAGES_DIR
 from app.db.database import init_db, insert_scan, bulk_insert_valves, get_connection
 from app.services.excel_service import parse_excel_to_rows
 
 from app.services.vision_service import index_dataset, recognize_image, recognize_topk
+from app.services.image_service import save_optimized_image_bytes
 
 app = FastAPI(title="Valve Vision API", version="0.1.0")
 
@@ -137,6 +139,46 @@ async def scan_code(image: UploadFile = File(...)):
         raise HTTPException(status_code=404, detail="No code found")
 
     return JSONResponse({"codes": out})
+
+
+@app.post("/train/upload")
+async def train_upload(ref: str = Form(...), image: UploadFile = File(...)):
+    """Upload a training frame for a given reference and store optimized JPEG under data/images/<ref>/.
+    Returns: { saved: bool, ref: str, filename: str, size: int }
+    """
+    ref_raw = (ref or "").strip()
+    if not ref_raw:
+        raise HTTPException(status_code=400, detail="Missing ref")
+    # sanitize ref to avoid path traversal and odd chars
+    import re
+    safe_ref = re.sub(r"[^A-Za-z0-9_-]", "-", ref_raw)
+    data = await image.read()
+    if not data:
+        raise HTTPException(status_code=400, detail="Empty image payload")
+
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+    filename = f"{ts}.jpg"
+    dest_dir = Path(IMAGES_DIR) / safe_ref
+    dest_path = dest_dir / filename
+    try:
+        saved = save_optimized_image_bytes(data, dest_path)
+        size = saved.stat().st_size if saved.exists() else 0
+        return JSONResponse({
+            "saved": True,
+            "ref": safe_ref,
+            "filename": filename,
+            "size": size,
+            "path": f"/images/{safe_ref}/{filename}",
+        })
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save training image: {e}")
+
+
+@app.post("/train/finalize")
+def train_finalize():
+    """Rebuild the visual index after a training session."""
+    count = index_dataset()
+    return {"indexed": count}
 
 
 @app.post("/valves/upload_excel")
