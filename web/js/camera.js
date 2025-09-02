@@ -408,6 +408,9 @@
     const stopHandler = () => { aiTrainAbort = true; };
     if(btnStop) btnStop.addEventListener('click', stopHandler, { once: true });
 
+    // Notificar inicio
+    try{ window.dispatchEvent(new CustomEvent('AI_TRAIN_PROGRESS', { detail: { sent:0, total, failed:0, elapsed:0, running:true } })); }catch(_){ }
+
     for(let i=0; i<total && !aiTrainAbort; i++){
       try{
         const w = video.videoWidth || 640;
@@ -423,6 +426,11 @@
         if(!r.ok){ failed++; } else { sent++; }
       }catch(err){ console.error(err); failed++; }
       updateTimer();
+      // Emitir progreso
+      try{
+        const elapsed = Math.round((Date.now() - startTs)/1000);
+        window.dispatchEvent(new CustomEvent('AI_TRAIN_PROGRESS', { detail: { sent, total, failed, elapsed, running:true } }));
+      }catch(_){ }
       // Esperar 500ms entre capturas para ~2 fps
       await new Promise(r => setTimeout(r, 500));
     }
@@ -437,6 +445,9 @@
     aiTrainRunning = false;
     if(btnCap) btnCap.disabled = false;
     if(timerEl) timerEl.textContent = '';
+
+    // Notificar fin
+    try{ window.dispatchEvent(new CustomEvent('AI_TRAIN_PROGRESS', { detail: { sent, total, failed, elapsed: Math.round((Date.now()-startTs)/1000), running:false } })); }catch(_){ }
 
     function updateTimer(){
       if(!timerEl) return;

@@ -30,6 +30,36 @@
         } else {
           activeBanks.add(bank);
         }
+
+  // --- Progreso de entrenamiento (sidebar) ---
+  function renderTrainProgress(detail){
+    try{
+      const box = document.getElementById('sidebarExtra');
+      if(!box) return;
+      const sent = Number(detail?.sent||0);
+      const total = Math.max(1, Number(detail?.total||0));
+      const failed = Number(detail?.failed||0);
+      const elapsed = Number(detail?.elapsed||0);
+      const pct = Math.round((sent/total)*100);
+      const mm = String(Math.floor(elapsed/60)).padStart(2,'0');
+      const ss = String(elapsed%60).padStart(2,'0');
+      box.innerHTML = '';
+      const wrap = document.createElement('div');
+      wrap.className = 'train-progress';
+      const h = document.createElement('h4'); h.textContent = 'Progreso de entrenamiento';
+      const bar = document.createElement('div'); bar.className = 'progress';
+      const fill = document.createElement('div'); fill.className = 'progress__fill'; fill.style.width = pct + '%';
+      bar.appendChild(fill);
+      const meta = document.createElement('div'); meta.className = 'progress__meta';
+      meta.textContent = `${sent}/${total} subidas • ${failed} fallidas • ${mm}:${ss}`;
+      wrap.append(h, bar, meta);
+      box.appendChild(wrap);
+    }catch(_){ }
+  }
+
+  window.addEventListener('AI_TRAIN_PROGRESS', (ev) => {
+    renderTrainProgress(ev && ev.detail ? ev.detail : {});
+  });
         renderBankFilters();
         renderMenu(filterValvulasByBank(state.valvulas));
       };
@@ -375,6 +405,7 @@
       card.setAttribute('role','button');
       card.setAttribute('tabindex','0');
       card.dataset.ref = it.id;
+      card.setAttribute('aria-selected', String(state.aiTrain.selectedRef === it.id));
       const img = document.createElement('img');
       img.src = BACKEND.replace(/\/$/, '') + it.image; // e.g., /images/<ref>/file.jpg
       img.alt = `Ref ${it.id}`;
@@ -384,7 +415,14 @@
       title.textContent = `${it.id} (${it.count})`;
       card.append(img, title);
       addActivationHandlers(card, () => selectAiTrainRef(it.id));
-      if(state.aiTrain.selectedRef === it.id){ card.classList.add('selected'); }
+      if(state.aiTrain.selectedRef === it.id){
+        card.classList.add('selected');
+        // Badge visual "Entrenando"
+        const badge = document.createElement('div');
+        badge.className = 'train-badge';
+        badge.textContent = 'Entrenando';
+        card.appendChild(badge);
+      }
       frag.appendChild(card);
     }
     grid.appendChild(frag);
@@ -399,6 +437,19 @@
     // Actualizar línea informativa bajo la cámara
     const info = document.getElementById('aiTrainSelectedInfo');
     if(info){ info.textContent = `Entrenando referencia: ${state.aiTrain.selectedRef}`; }
+
+    // Renderizar el sidebar como en la página principal (mínimo inmediato + enriquecido async)
+    try{ if(typeof renderSidebar === 'function'){ renderSidebar({ id: state.aiTrain.selectedRef, ref: state.aiTrain.selectedRef }); } }catch(_){ }
+    (async () => {
+      try{
+        if(typeof fetchValveDetail === 'function'){
+          const detail = await fetchValveDetail(String(state.aiTrain.selectedRef));
+          if(detail && typeof renderSidebar === 'function'){
+            renderSidebar({ ...detail, id: state.aiTrain.selectedRef, ref: state.aiTrain.selectedRef });
+          }
+        }
+      }catch(_){ /* noop */ }
+    })();
     // Iniciar cámara automáticamente si está disponible
     try{
       if(window.AITrainCam && typeof window.AITrainCam.startAITrainCamera === 'function'){
@@ -1016,6 +1067,12 @@
     // Ensamblar y render
     card.append(head, wrap);
     body.appendChild(card);
+
+    // Contenedor extra (progreso de entrenamiento, métricas, etc.)
+    const extra = document.createElement('div');
+    extra.id = 'sidebarExtra';
+    extra.className = 'sidebar-extra';
+    body.appendChild(extra);
 
     // En pantallas pequeñas, hacer scroll al sidebar para que el usuario lo vea
     try{
