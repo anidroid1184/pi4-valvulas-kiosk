@@ -259,6 +259,12 @@ body{
 /* Grid */
 .grid{display:grid;gap:12px;grid-template-columns:1fr}
 .grid .empty{ grid-column:1/-1; text-align:center; color:var(--muted); opacity:.9; padding:10px 0; font-size:.95rem }
+.cards-container{
+  position: relative;
+  z-index: 1; /* sobre posibles overlays livianos */
+  background: transparent;
+  padding: 2px; /* aislamiento mínimo para debug visual si se requiere */
+}
 .card{
   background:var(--card);
   border:1px solid var(--border);
