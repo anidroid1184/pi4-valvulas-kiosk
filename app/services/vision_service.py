@@ -145,19 +145,41 @@ def _count_good_matches(q_desc: np.ndarray, t_desc: np.ndarray) -> int:
     return good
 
 
+def _ensure_index_loaded() -> bool:
+    """Lazy load index from cache or rebuild on demand."""
+    if not _INDEX:
+        _load_cache()
+        if not _INDEX:
+            index_dataset(index_only=False)
+    return bool(_INDEX)
+
+
+def _score_query_against_index(q_kp, q_desc) -> List[Tuple[str, float, float]]:
+    """Return list of tuples (class_id, avg_good, ratio) for all classes."""
+    scores: List[Tuple[str, float, float]] = []
+    for cls, item in _INDEX.items():
+        total_good = 0
+        descs = item.get("descs", [])
+        for d in descs:
+            if d is None or len(d) == 0:
+                continue
+            total_good += _count_good_matches(q_desc, d)
+        avg_good = (total_good / float(len(descs))) if descs else 0.0
+        ratio = avg_good / max(len(q_kp), 1)
+        scores.append((cls, avg_good, float(ratio)))
+    # sort best first by avg_good then ratio
+    scores.sort(key=lambda x: (x[1], x[2]), reverse=True)
+    return scores
+
+
 def recognize_image(image_bytes: bytes) -> Optional[dict]:
     """
     Reconoce una válvula a partir de bytes de imagen.
     Devuelve dict con {valve_id, name, confidence} o None si no hay match.
     """
     # Cargar índice en memoria si vacío
-    if not _INDEX:
-        _load_cache()
-        if not _INDEX:
-            # Intentar indexar en caliente si no hay caché
-            index_dataset(index_only=False)
-            if not _INDEX:
-                return None
+    if not _ensure_index_loaded():
+        return None
 
     # Decodificar imagen
     arr = np.frombuffer(image_bytes, dtype=np.uint8)
@@ -168,29 +190,10 @@ def recognize_image(image_bytes: bytes) -> Optional[dict]:
     if q_desc is None or len(q_desc) == 0:
         return None
 
-    best_cls = None
-    best_good = -1
-    best_ratio = 0.0
-
-    for cls, item in _INDEX.items():
-        total_good = 0
-        descs = item.get("descs", [])
-        for d in descs:
-            if d is None or len(d) == 0:
-                continue
-            total_good += _count_good_matches(q_desc, d)
-
-        # Normalizar por cantidad de imágenes de la clase para evitar sesgos
-        if descs:
-            avg_good = total_good / float(len(descs))
-        else:
-            avg_good = 0.0
-
-        ratio = avg_good / max(len(q_kp), 1)
-        if avg_good > best_good or (avg_good == best_good and ratio > best_ratio):
-            best_good = avg_good
-            best_ratio = float(ratio)
-            best_cls = cls
+    scores = _score_query_against_index(q_kp, q_desc)
+    if not scores:
+        return None
+    best_cls, best_good, best_ratio = scores[0]
 
     if best_cls is None:
         return None
@@ -205,3 +208,36 @@ def recognize_image(image_bytes: bytes) -> Optional[dict]:
         "name": f"[No verificado] {best_cls}",
         "confidence": confidence,
     }
+
+
+def recognize_topk(image_bytes: bytes, k: int = 3) -> List[dict]:
+    """Return top-k matches with confidences sorted desc. Empty list if none.
+
+    Each item: { valve_id: str, confidence: float, name: str }
+    Acceptance threshold uses same global MIN_GOOD and SCORE_THRESHOLD.
+    """
+    # Cargar índice
+    if not _ensure_index_loaded():
+        return []
+
+    # Decodificar imagen
+    arr = np.frombuffer(image_bytes, dtype=np.uint8)
+    img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
+    if img is None:
+        return []
+    q_kp, q_desc = _extract_orb(img)
+    if q_desc is None or len(q_desc) == 0:
+        return []
+
+    scores = _score_query_against_index(q_kp, q_desc)
+    results: List[dict] = []
+    for cls, avg_good, ratio in scores[: max(1, int(k))]:
+        if avg_good < VISION_MIN_GOOD_MATCHES or ratio < VISION_SCORE_THRESHOLD:
+            continue
+        confidence = max(0.0, min(1.0, ratio))
+        results.append({
+            "valve_id": cls,
+            "name": f"[No verificado] {cls}",
+            "confidence": confidence,
+        })
+    return results

@@ -131,6 +131,35 @@
     return out;
   }
 
+  // Enriquecer catálogo con metadata (une por id/ref/nombre normalizados)
+  function mergeCatalogWithMeta(catalog, meta){
+    const norm = (x) => String(x || '')
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9_-]+/g,'-');
+
+    const metaMap = new Map();
+    for(const m of meta){
+      const keys = [m.id, m.ref, m.nombre].filter(Boolean).map(norm).filter(Boolean);
+      for(const k of keys){ if(!metaMap.has(k)) metaMap.set(k, m); }
+    }
+
+    return catalog.map(item => {
+      const keys = [item.id, item.ref, item.nombre].filter(Boolean).map(norm).filter(Boolean);
+      let m = null;
+      for(const k of keys){ if(metaMap.has(k)){ m = metaMap.get(k); break; } }
+      if(!m) return item;
+
+      // Mantener imagen y id/ref del catálogo; completar campos desde meta
+      const merged = { ...item };
+      const candidates = ['nombre','ubicacion','banco','bank','notas','estado','ultima_revision','cantidad','numero_serie','serie','ficha_tecnica','simbolo'];
+      for(const f of candidates){ if(m[f] != null && merged[f] == null) merged[f] = m[f]; }
+      // Si meta tiene nombre más descriptivo, preferirlo
+      if(m.nombre && String(m.nombre).length > String(item.nombre||'').length){ merged.nombre = m.nombre; }
+      return merged;
+    });
+  }
+
   // Pre-carga de imágenes del carrusel para una referencia
   function warmupRef(ref){
     if(!state.imagesIndex || !state.imagesIndex[ref]) return;
@@ -347,14 +376,38 @@
     apply('');
   }
 
-  // Carga de metadatos desde valvulas.json (si existe)
+  // Carga de metadatos: intenta primero backend /valves y, si falla,
+  // cae a valvulas.json local. Devuelve array de objetos homogéneos.
   async function loadMetadata(){
+    // 1) Backend /valves
+    try{
+      const url = BACKEND.replace(/\/$/, '') + '/valves';
+      const res = await fetch(url, { cache:'no-store' });
+      if(res.ok){
+        const payload = await res.json();
+        const items = Array.isArray(payload?.items) ? payload.items : [];
+        // Normaliza campos hacia un esquema común
+        return items.map(r => ({
+          id: r.id ?? r.valvula ?? r.numero_serie ?? undefined,
+          ref: r.valvula ?? r.id ?? undefined,
+          nombre: String(r.valvula ?? r.id ?? '').trim(),
+          ubicacion: r.ubicacion ?? null,
+          banco: null, // se derivará con getBank cuando aplique
+          numero_serie: r.numero_serie ?? null,
+          ficha_tecnica: r.ficha_tecnica ?? null,
+          simbolo: r.simbolo ?? null,
+        }));
+      }
+    }catch(_){ /* ignore */ }
+
+    // 2) Local JSON (si existe en /web)
     try{
       const res = await fetch(METADATA_JSON, { cache:'no-store' });
       if(!res.ok) return null;
       const data = await res.json();
-      if(!Array.isArray(data)) return null;
-      return data;
+      if(Array.isArray(data)) return data;
+      if(data && Array.isArray(data.items)) return data.items;
+      return null;
     }catch(_){
       return null;
     }
@@ -897,6 +950,13 @@
       catalog = meta;
     } else {
       catalog = buildFallbackValveData(images || []);
+    }
+
+    // Enriquecer con metadata si existe (para tener ubicacion/banco y habilitar filtros)
+    if(Array.isArray(catalog) && Array.isArray(meta) && meta.length){
+      try{
+        catalog = mergeCatalogWithMeta(catalog, meta);
+      }catch(_){ /* noop */ }
     }
 
     state.valvulas = catalog;

@@ -13,7 +13,7 @@ from app.config import IMAGES_DIR
 from app.db.database import init_db, insert_scan, bulk_insert_valves, get_connection
 from app.services.excel_service import parse_excel_to_rows
 
-from app.services.vision_service import index_dataset, recognize_image
+from app.services.vision_service import index_dataset, recognize_image, recognize_topk
 
 app = FastAPI(title="Valve Vision API", version="0.1.0")
 
@@ -79,6 +79,23 @@ async def recognize(image: UploadFile = File(...)):
     if result is None:
         raise HTTPException(status_code=404, detail="No match found")
     return JSONResponse(result)
+
+
+@app.post("/match")
+async def match(image: UploadFile = File(...), k: int = 3):
+    """Return top-k visual matches for a given image.
+    Response format: { items: [ { valve_id, name, confidence } ] }
+    """
+    data = await image.read()
+    try:
+        k = int(k)
+    except Exception:
+        k = 3
+    items = recognize_topk(data, k=max(1, min(k, 10)))
+    if not items:
+        # keep 200 with empty list to allow clients to handle gracefully
+        return JSONResponse({"items": []})
+    return JSONResponse({"items": items})
 
 
 @app.post("/scan_code")
