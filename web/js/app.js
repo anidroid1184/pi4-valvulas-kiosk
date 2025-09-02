@@ -40,10 +40,13 @@
   function filterValvulasByBank(valvulas) {
     if (!activeBanks.size) return valvulas;
     return valvulas.filter(v => {
-      // Buscar ubicaciones tipo "A1", "B2", etc. en v.ubicacion
-      const ubicaciones = (v.ubicacion || v.ubicaciones || '').toString().split(/[,;\s]+/).map(s => s.trim()).filter(Boolean);
-      // Si alguna ubicación empieza con una de las letras seleccionadas, mostrar
-      return ubicaciones.some(ub => activeBanks.has(ub.charAt(0).toUpperCase()));
+      let ubicaciones = [];
+      if (Array.isArray(v.ubicacion)) {
+        ubicaciones = v.ubicacion;
+      } else if (typeof v.ubicacion === 'string') {
+        ubicaciones = v.ubicacion.split(/[,;\s]+/).map(s => s.trim()).filter(Boolean);
+      }
+      return ubicaciones.some(ub => ub && activeBanks.has(ub.charAt(0).toUpperCase()));
     });
   }
   'use strict';
