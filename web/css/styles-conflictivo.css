@@ -24,24 +24,12 @@
   --danger:#ef4444;
   --overlay:rgba(0,0,0,.4);
   --border:#e2e8f0;
-  /* Motion & elevation tokens */
-  --motion-fast: .18s ease;
-  --motion-med: .28s ease;
-  --shadow-sm: 0 1px 2px rgba(0,0,0,.06);
-  --shadow-md: 0 6px 18px rgba(0,0,0,.08);
-  --shadow-lg: 0 12px 30px rgba(0,0,0,.12);
   /* Tints derivadas (suaves) */
   --tint-300: rgba(191,217,255,.26); /* de --c-300 */
   --tint-300-strong: rgba(191,217,255,.38);
   --tint-500: rgba(37,99,235,.12);  /* de --c-500 */
   --tint-700: rgba(11,59,91,.16);   /* de --c-700 */
   --tint-900: rgba(15,23,42,.12);   /* de --c-900 */
-
-  /* Bank tokens (A amarillo, B azul, C rojo, D verde) */
-  --bankA:#F59E0B; --bankA-bg:#FEF3C7; --bankA-dark:#92400E;
-  --bankB:#2563EB; --bankB-bg:#DBEAFE; --bankB-dark:#1E3A8A;
-  --bankC:#DC2626; --bankC-bg:#FEE2E2; --bankC-dark:#7F1D1D;
-  --bankD:#16A34A; --bankD-bg:#DCFCE7; --bankD-dark:#14532D;
 }
 *{box-sizing:border-box}
 html,body{height:100%; background:var(--bg)}
@@ -53,7 +41,7 @@ body{
 }
 
 /* Header */
-.app-header{padding:28px 20px 24px;border-bottom:1px solid var(--border);text-align:center;background:var(--c-700); position:sticky; top:0; z-index:40; box-shadow: var(--shadow-sm);}
+.app-header{padding:28px 20px 24px;border-bottom:1px solid var(--border);text-align:center;background:var(--c-700)}
 .app-header h1{
   margin:0;
   font-size:2rem;
@@ -81,14 +69,12 @@ body{
   -webkit-backdrop-filter:saturate(140%) blur(6px);
   border:1px solid #e5e7eb;
   border-radius:14px;
-  box-shadow:var(--shadow-md);
+  box-shadow:0 6px 18px rgba(0,0,0,.06);
   justify-content:center; /* centrar contenido */
-  position:sticky; top:72px; z-index:35;
 }
 .nav-toggle{
   background:#f8fafc;color:#0f172a;
   border:1px solid #d1d5db;border-radius:999px;padding:8px 12px;cursor:pointer;
-  transition: background-color var(--motion-fast), border-color var(--motion-fast), transform var(--motion-fast), box-shadow var(--motion-fast);
 }
 .nav-toggle:focus{box-shadow:0 0 0 3px var(--accent);outline:none}
 .nav-items{display:none;gap:12px;justify-content:center;width:100%}
@@ -98,14 +84,14 @@ body{
   background:#f8fafc;color:#0f172a;
   border:1px solid #d1d5db;border-radius:999px;padding:10px 16px;cursor:pointer;
   font-size:1rem; line-height:1; min-width:130px;
-  transition: background-color var(--motion-fast), border-color var(--motion-fast), box-shadow var(--motion-fast), transform var(--motion-fast);
+  transition: background-color .22s ease, border-color .22s ease, box-shadow .22s ease, transform .12s ease;
 }
 .nav-btn:focus{box-shadow:0 0 0 3px var(--accent);outline:none}
 .nav-btn.active{
   background:var(--c-500);
   color:#ffffff;
   border-color:var(--c-500);
-  box-shadow: 0 6px 14px rgba(37,99,235,.25);
+  box-shadow: 0 6px 14px rgba(12,116,137,.25);
 }
 .nav-btn:hover{
   background:#eef2f5;
@@ -119,7 +105,7 @@ body{
 }
 
 @media (prefers-reduced-motion: reduce){
-  .nav-btn, .nav-toggle, .card, .card img, .chip, .valve-card{ transition:none }
+  .nav-btn{ transition:none }
 }
 
 /* Main */
@@ -149,7 +135,7 @@ body{
 .sidebar-body{ padding:12px; color:var(--text); }
 
 /* Valve card (tarjeta de válvula en sidebar) */
-.valve-card{ border-radius:12px; overflow:hidden; box-shadow:var(--shadow-md); border:1px solid var(--border); background:#fff; transition: transform var(--motion-med), box-shadow var(--motion-med);} 
+.valve-card{ border-radius:12px; overflow:hidden; box-shadow:0 4px 12px rgba(0,0,0,.06); border:1px solid var(--border); background:#fff; }
 .valve-card__header{ background:var(--c-500); color:#fff; padding:14px 16px; }
 .valve-card__title{ margin:0; font-size:1.15rem; font-weight:700; letter-spacing:.2px; }
 .valve-card__body{ padding:14px; display:grid; gap:12px; }
@@ -163,7 +149,6 @@ body{
   border-radius:8px;
   border:1px solid var(--border);
   display:flex; align-items:center; gap:8px;
-  animation: slideIn .36s ease both;
 }
 .valve-section p{ margin:0; color:#0f172a; }
 .valve-section .kv{ display:grid; grid-template-columns: auto 1fr; gap:6px 10px; font-size:.95rem; color:#0f172a; }
@@ -174,15 +159,14 @@ body{
 .valve-card__link:hover{ text-decoration:underline; }
 
 /* Chips de ubicación */
-.chip{ display:inline-flex; align-items:center; gap:6px; padding:8px 12px; border-radius:999px; border:1px solid var(--border); background:var(--tint-300); color:var(--c-700); font-size:.95rem; transition: transform var(--motion-fast), box-shadow var(--motion-fast), background-color var(--motion-fast); }
-.chip:hover{ background:var(--tint-300-strong); transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+.chip{ display:inline-flex; align-items:center; gap:6px; padding:8px 12px; border-radius:999px; border:1px solid var(--border); background:var(--tint-300); color:var(--c-700); font-size:.95rem; }
+.chip:hover{ background:var(--tint-300-strong); }
 
 /* Animaciones */
 .fade-in{ opacity:0; transform:translateY(6px); animation:fadeInUp .38s ease forwards; }
 .hover-float{ transition: transform .18s ease, box-shadow .18s ease; }
 .hover-float:hover{ transform:translateY(-2px); box-shadow:0 10px 24px rgba(0,0,0,.12); }
 @keyframes fadeInUp{ to{ opacity:1; transform:none; } }
-@keyframes slideIn{ from{ opacity:0; transform: translateY(4px);} to{ opacity:1; transform:none; } }
 
 /* Iconos SVG embebidos (usa currentColor) */
 .icon{ width:18px; height:18px; display:inline-block; color:var(--c-700); }
@@ -232,16 +216,13 @@ body{
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   cursor:pointer;
   outline:none;
-  position:relative; /* para bank-pill */
-  transition: transform var(--motion-med), box-shadow var(--motion-med);
 }
 .card:focus{box-shadow:0 0 0 3px var(--accent)}
 .card[role="button"]{user-select:none}
-.card img{width:100%;height:220px;object-fit:cover;border-radius:8px;background:#f1f5f9; transition: transform var(--motion-med);}
-.card:hover{ transform: translateY(-3px); box-shadow: var(--shadow-lg); }
-.card:hover img{ transform: scale(1.03); }
+.card img{width:100%;height:220px;object-fit:cover;border-radius:8px;background:#f1f5f9}
 .card .title{margin-top:8px;font-size:.95rem;color:var(--text)}
 .card .subtitle{margin:2px 0 0;font-size:.8rem;color:var(--muted)}
+<<<<<<< HEAD
 
 /* Bank pill overlay en cards */
 .bank-pill{
@@ -269,6 +250,8 @@ body{
 .search-bar #searchBox{ flex: 1 1 260px; }
 .bank-filters{ display:flex; align-items:center; gap:6px; flex-wrap:wrap }
 .bank-filters .chip{ cursor:pointer; user-select:none }
+=======
+>>>>>>> parent of 180c12e (Colores de los botones adaptados)
 .placeholder{
   width:100%;height:220px;display:flex;align-items:center;justify-content:center;
   background:#f1f5f9;border-radius:8px;color:var(--muted);font-size:.85rem;border:1px dashed #cbd5e1

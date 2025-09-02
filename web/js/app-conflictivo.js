@@ -40,6 +40,7 @@
       .replaceAll("'",'&#39;');
   }
 
+<<<<<<< HEAD
   // Detecta el banco (A/B/C/D) desde un objeto válvula. Usa campo 'banco' si existe
   // o intenta inferirlo desde 'nombre', 'ubicacion', 'notas' o 'id/ref'.
   function getBank(v){
@@ -109,6 +110,8 @@
     renderMenu(list);
   }
 
+=======
+>>>>>>> parent of 180c12e (Colores de los botones adaptados)
   // Normaliza URLs por si un índice antiguo incluye subcarpetas espurias como "images/"
   function normalizeCardPhotoUrl(url){
     let out = String(url || '');
@@ -479,8 +482,6 @@
         img.replaceWith(placeholderImage());
       }, { passive:true });
 
-      // (Colores por banco ahora se muestran en chips de Ubicación del sidebar)
-
       const title = document.createElement('div');
       title.className = 'title';
       title.textContent = v.nombre;
@@ -806,17 +807,6 @@
       for(const p of parts){
         const chip = document.createElement('span');
         chip.className = 'chip';
-        const first = String(p).trim().charAt(0).toUpperCase();
-        if(first === 'A' || first === 'B' || first === 'C' || first === 'D'){
-          chip.classList.add('chip--bank', 'chip--bank' + first);
-        } else {
-          // fallback: intentar detectar "Banco X" en el texto
-          const s = String(p).toUpperCase();
-          if(/BANC?O\s*A\b/.test(s)) chip.classList.add('chip--bank','chip--bankA');
-          else if(/BANC?O\s*B\b/.test(s)) chip.classList.add('chip--bank','chip--bankB');
-          else if(/BANC?O\s*C\b/.test(s)) chip.classList.add('chip--bank','chip--bankC');
-          else if(/BANC?O\s*D\b/.test(s)) chip.classList.add('chip--bank','chip--bankD');
-        }
         chip.textContent = p;
         chipsWrap.appendChild(chip);
       }
@@ -1058,7 +1048,6 @@
         // conservar el campo original por si el sidebar lo requiere
         valvula: r.valvula,
         ubicacion: r.ubicacion,
-        banco: r.banco || r.bank, // si el backend lo provee
         imagen: r.simbolo || '',
         // extras for sidebar/search if needed
         cantidad: r.cantidad,
