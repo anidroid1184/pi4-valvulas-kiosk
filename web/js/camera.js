@@ -1,6 +1,9 @@
 (() => {
   'use strict';
 
+  // Backend base URL aligned with CORS-allowed origin
+  const BACKEND = 'http://127.0.0.1:8000';
+
   // QR scanner (html5-qrcode)
   let qr = null;
   let qrActive = false;
@@ -120,6 +123,8 @@
     if(camera){ camera.hidden = true; if(!camera.hidden){ closeCamera(); } }
     if(ai){ ai.hidden = true; if(aiStream){ stopAICamera(); } }
     if(aiTrain) aiTrain.hidden = false;
+    // Auto-iniciar stream cv2 al abrir la pestaña
+    try{ startAITrainCamera(); }catch(_){}
   }
 
   // Conservado por compatibilidad pero no se usa con html5-qrcode
@@ -144,7 +149,7 @@
 
       let data = null;
       try{
-        const r = await fetch('http://localhost:8000/scan_code', { method:'POST', body: form });
+        const r = await fetch(`${BACKEND}/scan_code`, { method:'POST', body: form });
         if(r.ok){
           data = await r.json();
         }else{
@@ -155,7 +160,7 @@
         }
       }catch(err){
         console.error(err);
-        setStatus('No se pudo conectar con el servicio de códigos (http://localhost:8000)');
+        setStatus(`No se pudo conectar con el servicio de códigos (${BACKEND})`);
         if(guide) guide.textContent = 'Coloca el QR o código de barras dentro del marco';
         return;
       }
@@ -246,7 +251,7 @@
 
       let data = null;
       try{
-        const r = await fetch('http://localhost:8000/recognize', { method:'POST', body: form });
+        const r = await fetch(`${BACKEND}/recognize`, { method:'POST', body: form });
         if(r.ok){
           data = await r.json();
           // Actualizar guía de AI según confianza
@@ -261,7 +266,7 @@
         }
       }catch(netErr){
         console.error(netErr);
-        setStatus('No se pudo conectar con el servicio de reconocimiento (http://localhost:8000)');
+        setStatus(`No se pudo conectar con el servicio de reconocimiento (${BACKEND})`);
       } finally {
         if(btnAICapture){ btnAICapture.disabled = false; }
       }
@@ -332,9 +337,15 @@
     if(btnAIStop) btnAIStop.addEventListener('click', stopAICamera);
     if(btnAICapture) btnAICapture.addEventListener('click', captureAndRecognize);
 
-    if(btnAiTrainStart) btnAiTrainStart.addEventListener('click', startAITrainCamera);
-    if(btnAiTrainStop) btnAiTrainStop.addEventListener('click', stopAITrainCamera);
-    if(btnAiTrainCapture) btnAiTrainCapture.addEventListener('click', startAITrainingCapture);
+    if(btnAiTrainStart) {
+      btnAiTrainStart.addEventListener('click', () => { console.log('[AITrain] Click start'); startAITrainCamera(); });
+    } else { console.warn('[AITrain] btnAiTrainStart no encontrado'); }
+    if(btnAiTrainStop) {
+      btnAiTrainStop.addEventListener('click', () => { console.log('[AITrain] Click stop'); stopAITrainCamera(); });
+    } else { console.warn('[AITrain] btnAiTrainStop no encontrado'); }
+    if(btnAiTrainCapture) {
+      btnAiTrainCapture.addEventListener('click', () => { console.log('[AITrain] Click capture'); startAITrainingCapture(); });
+    } else { console.warn('[AITrain] btnAiTrainCapture no encontrado'); }
   }
 
   document.addEventListener('DOMContentLoaded', init, { once:true });
@@ -344,39 +355,50 @@
   window.CameraDemo = { openCamera, closeCamera, showImagesTab, showCameraTab, showAITab, startAICamera, stopAICamera, captureAndRecognize };
   
   // ---- AI Train implementation ----
+  let aiTrainStatusTimer = null; // polling status
   async function startAITrainCamera(){
     try{
-      if(aiTrainStream) return;
-      const video = document.getElementById('aiTrainVideo');
+      const img = document.getElementById('aiTrainMJPEG');
       const btnStart = document.getElementById('btnAiTrainStart');
       const btnStop = document.getElementById('btnAiTrainStop');
       const btnCap = document.getElementById('btnAiTrainCapture');
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio:false });
-      aiTrainStream = stream;
-      if(video) video.srcObject = stream;
+      setStatus('Iniciando vista previa cv2…');
+      // Abrir cámara cv2 (sin entrenar) antes de fijar el stream
+      try{ await fetch(`${BACKEND}/cv/start`, { method:'POST' }); }catch(_){/* offline? */}
+      // Stream MJPEG con handlers de robustez
+      if(img){
+        const loadOk = () => { setStatus('Cámara cv2 lista'); };
+        const loadErr = async () => {
+          // Reintentar: aseguremos cámara abierta y recargar con cache-busting
+          try{ await fetch(`${BACKEND}/cv/start`, { method:'POST' }); }catch(_){ }
+          const base = `${BACKEND}/cv/stream`;
+          img.src = base + (base.includes('?') ? '&' : '?') + 't=' + Date.now();
+        };
+        try{ img.removeEventListener('load', loadOk); img.removeEventListener('error', loadErr); }catch(_){}
+        img.addEventListener('load', loadOk, { once:false });
+        img.addEventListener('error', loadErr, { once:false });
+        if(!img.src){ img.src = `${BACKEND}/cv/stream?t=` + Date.now(); }
+      }
       if(btnStart) btnStart.hidden = true;
       if(btnStop) btnStop.hidden = false;
       if(btnCap) btnCap.disabled = false;
-      setStatus('Cámara de entrenamiento lista');
+      // status será actualizado por onload
     }catch(err){
       console.error(err);
-      setStatus('No fue posible acceder a la cámara (Entrenar)');
+      setStatus('No fue posible iniciar la cámara cv2');
     }
   }
 
-  function stopAITrainCamera(){
+  async function stopAITrainCamera(){
     try{
-      const video = document.getElementById('aiTrainVideo');
       const btnStart = document.getElementById('btnAiTrainStart');
       const btnStop = document.getElementById('btnAiTrainStop');
       const btnCap = document.getElementById('btnAiTrainCapture');
-      aiTrainAbort = true;
-      aiTrainRunning = false;
-      if(aiTrainStream){
-        for(const t of aiTrainStream.getTracks()) t.stop();
-        aiTrainStream = null;
-      }
-      if(video) video.srcObject = null;
+      const img = document.getElementById('aiTrainMJPEG');
+      if(aiTrainStatusTimer){ clearInterval(aiTrainStatusTimer); aiTrainStatusTimer = null; }
+      try{ await fetch(`${BACKEND}/cv/stop`, { method:'POST' }); }catch(_){ }
+      // cerrar stream visual
+      if(img){ img.src = ''; }
       if(btnStart) btnStart.hidden = false;
       if(btnStop) btnStop.hidden = true;
       if(btnCap) btnCap.disabled = true;
@@ -387,75 +409,50 @@
   async function startAITrainingCapture(){
     const ref = (window.AITrain && typeof window.AITrain.getSelectedRef === 'function') ? window.AITrain.getSelectedRef() : null;
     if(!ref){ setStatus('Selecciona una referencia en la lista de arriba antes de capturar.'); return; }
-    const video = document.getElementById('aiTrainVideo');
-    const canvas = document.getElementById('aiTrainCanvas');
     const btnCap = document.getElementById('btnAiTrainCapture');
     const btnStop = document.getElementById('btnAiTrainStop');
     const timerEl = document.getElementById('aiTrainTimer');
-    if(!video || !canvas || !aiTrainStream){ setStatus('La cámara no está lista.'); return; }
-
-    aiTrainAbort = false;
-    aiTrainRunning = true;
-    let sent = 0;
-    let failed = 0;
-    const total = 60; // 2 fps * 30s
-    const startTs = Date.now();
     if(btnCap) btnCap.disabled = true;
     if(btnStop) btnStop.disabled = false;
-    updateTimer();
-
-    // Early stop on Stop button
-    const stopHandler = () => { aiTrainAbort = true; };
-    if(btnStop) btnStop.addEventListener('click', stopHandler, { once: true });
-
-    // Notificar inicio
-    try{ window.dispatchEvent(new CustomEvent('AI_TRAIN_PROGRESS', { detail: { sent:0, total, failed:0, elapsed:0, running:true } })); }catch(_){ }
-
-    for(let i=0; i<total && !aiTrainAbort; i++){
-      try{
-        const w = video.videoWidth || 640;
-        const h = video.videoHeight || 480;
-        canvas.width = w; canvas.height = h;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(video, 0, 0, w, h);
-        const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.9));
-        const form = new FormData();
-        form.append('ref', String(ref));
-        form.append('image', blob, `frame_${String(i).padStart(2,'0')}.jpg`);
-        const r = await fetch('http://localhost:8000/train/upload', { method:'POST', body: form });
-        if(!r.ok){ failed++; } else { sent++; }
-      }catch(err){ console.error(err); failed++; }
-      updateTimer();
-      // Emitir progreso
-      try{
-        const elapsed = Math.round((Date.now() - startTs)/1000);
-        window.dispatchEvent(new CustomEvent('AI_TRAIN_PROGRESS', { detail: { sent, total, failed, elapsed, running:true } }));
-      }catch(_){ }
-      // Esperar 500ms entre capturas para ~2 fps
-      await new Promise(r => setTimeout(r, 500));
-    }
-
-    // Finalizar
+    // iniciar entrenamiento en backend cv2
     try{
-      const fin = await fetch('http://localhost:8000/train/finalize', { method:'POST' });
-      if(fin.ok){ setStatus(`Entrenamiento completado: ${sent}/${total} imágenes subidas${failed?`, ${failed} fallidas`:''}. Índice actualizado.`); }
-      else { setStatus(`Capturas: ${sent}/${total}. Error al reindexar: ${fin.status}`); }
-    }catch(err){ setStatus(`Capturas: ${sent}/${total}. No se pudo reindexar.`); }
+      const r = await fetch(`${BACKEND}/cv/start?train=1&ref=${encodeURIComponent(String(ref))}`, { method:'POST' });
+      if(!r.ok){ setStatus('No se pudo iniciar entrenamiento'); if(btnCap) btnCap.disabled = false; return; }
+    }catch(err){ console.error(err); setStatus('Error de red iniciando entrenamiento'); if(btnCap) btnCap.disabled = false; return; }
 
-    aiTrainRunning = false;
-    if(btnCap) btnCap.disabled = false;
-    if(timerEl) timerEl.textContent = '';
+    const t0 = Date.now();
+    // notificar inicio
+    try{ window.dispatchEvent(new CustomEvent('AI_TRAIN_PROGRESS', { detail: { sent:0, total:60, failed:0, elapsed:0, running:true } })); }catch(_){ }
 
-    // Notificar fin
-    try{ window.dispatchEvent(new CustomEvent('AI_TRAIN_PROGRESS', { detail: { sent, total, failed, elapsed: Math.round((Date.now()-startTs)/1000), running:false } })); }catch(_){ }
-
-    function updateTimer(){
-      if(!timerEl) return;
-      const elapsed = Math.round((Date.now() - startTs)/1000);
-      const mm = String(Math.floor(elapsed/60)).padStart(2,'0');
-      const ss = String(elapsed%60).padStart(2,'0');
-      timerEl.textContent = `${sent}/${total} subidas • ${mm}:${ss}`;
-    }
+    // polling estado
+    if(aiTrainStatusTimer){ clearInterval(aiTrainStatusTimer); }
+    aiTrainStatusTimer = setInterval(async () => {
+      try{
+        const rs = await fetch(`${BACKEND}/cv/status`);
+        if(!rs.ok) return;
+        const st = await rs.json();
+        const elapsed = Math.round((Date.now() - t0)/1000);
+        const sent = Number(st.sent||0);
+        const total = Number(st.total||60);
+        const failed = Number(st.failed||0);
+        const running = !!st.training;
+        // emitir progreso para sidebar
+        try{ window.dispatchEvent(new CustomEvent('AI_TRAIN_PROGRESS', { detail: { sent, total, failed, elapsed, running } })); }catch(_){ }
+        if(timerEl){
+          const mm = String(Math.floor(elapsed/60)).padStart(2,'0');
+          const ss = String(elapsed%60).padStart(2,'0');
+          timerEl.textContent = `${sent}/${total} subidas • ${mm}:${ss}`;
+        }
+        if(!running || sent + failed >= total){
+          clearInterval(aiTrainStatusTimer); aiTrainStatusTimer = null;
+          // reindexar
+          try{ await fetch(`${BACKEND}/train/finalize`, { method:'POST' }); }catch(_){}
+          setStatus(`Entrenamiento completado: ${sent}/${total} imágenes subidas${failed?`, ${failed} fallidas`:''}. Índice actualizado.`);
+          if(btnCap) btnCap.disabled = false;
+          if(timerEl) timerEl.textContent = '';
+        }
+      }catch(_){ /* noop */ }
+    }, 500);
   }
 
   // expose for debugging

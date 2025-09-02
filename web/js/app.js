@@ -30,69 +30,23 @@
         } else {
           activeBanks.add(bank);
         }
-
-  // --- Progreso de entrenamiento (sidebar) ---
-  function renderTrainProgress(detail){
-    try{
-      const box = document.getElementById('sidebarExtra');
-      if(!box) return;
-      const sent = Number(detail?.sent||0);
-      const total = Math.max(1, Number(detail?.total||0));
-      const failed = Number(detail?.failed||0);
-      const elapsed = Number(detail?.elapsed||0);
-      const pct = Math.round((sent/total)*100);
-      const mm = String(Math.floor(elapsed/60)).padStart(2,'0');
-      const ss = String(elapsed%60).padStart(2,'0');
-      box.innerHTML = '';
-      const wrap = document.createElement('div');
-      wrap.className = 'train-progress';
-      const h = document.createElement('h4'); h.textContent = 'Progreso de entrenamiento';
-      const bar = document.createElement('div'); bar.className = 'progress';
-      const fill = document.createElement('div'); fill.className = 'progress__fill'; fill.style.width = pct + '%';
-      bar.appendChild(fill);
-      const meta = document.createElement('div'); meta.className = 'progress__meta';
-      meta.textContent = `${sent}/${total} subidas • ${failed} fallidas • ${mm}:${ss}`;
-      wrap.append(h, bar, meta);
-      box.appendChild(wrap);
-    }catch(_){ }
-  }
-
-  window.addEventListener('AI_TRAIN_PROGRESS', (ev) => {
-    renderTrainProgress(ev && ev.detail ? ev.detail : {});
-  });
         renderBankFilters();
         renderMenu(filterValvulasByBank(state.valvulas));
       };
     });
   }
 
-  // Filtra válvulas por bancos activos (robusto: letras A-D o números 1-4)
+  // Filtra válvulas por bancos activos
   function filterValvulasByBank(valvulas) {
     if (!activeBanks.size) return valvulas;
-    const mapDigitToBank = { '1':'A', '2':'B', '3':'C', '4':'D' };
     return valvulas.filter(v => {
-      // 1) Intentar con getBank() (letra, número o alfanumérico)
-      const b = getBank(v);
-      if (b && activeBanks.has(b)) return true;
-
-      // 2) Fallback: inspeccionar tokens de ubicacion
       let ubicaciones = [];
       if (Array.isArray(v.ubicacion)) {
         ubicaciones = v.ubicacion;
       } else if (typeof v.ubicacion === 'string') {
         ubicaciones = v.ubicacion.split(/[,;\s]+/).map(s => s.trim()).filter(Boolean);
       }
-      for (const ub of ubicaciones) {
-        if(!ub) continue;
-        const s = String(ub).toUpperCase();
-        // número 1-4
-        const m = s.match(/^([1-4])\b/);
-        if (m && activeBanks.has(mapDigitToBank[m[1]])) return true;
-        // primera letra
-        const ch = s.charAt(0);
-        if ('ABCD'.includes(ch) && activeBanks.has(ch)) return true;
-      }
-      return false;
+      return ubicaciones.some(ub => ub && activeBanks.has(ub.charAt(0).toUpperCase()));
     });
   }
   'use strict';
@@ -100,20 +54,16 @@
   // Config
   const IMAGE_FOLDER = 'STATIC/IMG/card-photos/'; // carpeta para portadas por referencia
   const IMAGE_LIST_JSON = IMAGE_FOLDER + 'index.json'; // formato: { images: ["file1.jpg", ...] }
-  const FORCE_LEGACY_STATIC = true; // forzar carga desde index.json de card-photos
+  const FORCE_LEGACY_STATIC = true; // forzar carga desde index.json de card-photos (con fallback a backend si vacío)
   const METADATA_JSON = 'valvulas.json'; // opcional en raíz de landing
-  const BACKEND = 'http://localhost:8000';
+  const BACKEND = 'http://127.0.0.1:8000';
 
   // Estado
   let state = {
     valvulas: [],
     map: new Map(),
     lastActivator: null,
-    imagesIndex: null, // { ref: [files...] }
-    aiTrain: {
-      index: [], // [{id, image, count}]
-      selectedRef: null,
-    }
+    imagesIndex: null // { ref: [files...] }
   };
 
   // Precalentamiento
@@ -134,23 +84,15 @@
   // o intenta inferirlo desde 'nombre', 'ubicacion', 'notas' o 'id/ref'.
   function getBank(v){
     if(!v) return null;
-    const mapDigitToBank = { '1':'A', '2':'B', '3':'C', '4':'D' };
     let raw = v.banco || v.bank || '';
     if(typeof raw === 'string' && raw.trim()){ raw = raw.trim().toUpperCase(); }
     const tryFields = [raw, v.nombre, v.ubicacion, v.notas, v.id, v.ref].filter(Boolean);
     for(const f of tryFields){
       const s = String(f).toUpperCase();
-      // 1) Coincidencias directas por letra
-      if(/\bBANC?O\s*A\b/.test(s) || /\bBANK\s*A\b/.test(s) || s === 'A'){ return 'A'; }
-      if(/\bBANC?O\s*B\b/.test(s) || /\bBANK\s*B\b/.test(s) || s === 'B'){ return 'B'; }
-      if(/\bBANC?O\s*C\b/.test(s) || /\bBANK\s*C\b/.test(s) || s === 'C'){ return 'C'; }
-      if(/\bBANC?O\s*D\b/.test(s) || /\bBANK\s*D\b/.test(s) || s === 'D'){ return 'D'; }
-      // 2) Coincidencias por número 1-4 (mapear a A-D)
-      const num = s.match(/\b(?:BANC?O|BANK)?\s*([1-4])\b/);
-      if(num && mapDigitToBank[num[1]]){ return mapDigitToBank[num[1]]; }
-      // 3) Tokens alfanuméricos que comienzan con A/B/C/D (ej: A12, C-03)
-      const first = s.trim().charAt(0);
-      if(first && 'ABCD'.includes(first)){ return first; }
+      if(/BANC?O\s*A\b/.test(s) || /\bBANK\s*A\b/.test(s) || s === 'A'){ return 'A'; }
+      if(/BANC?O\s*B\b/.test(s) || /\bBANK\s*B\b/.test(s) || s === 'B'){ return 'B'; }
+      if(/BANC?O\s*C\b/.test(s) || /\bBANK\s*C\b/.test(s) || s === 'C'){ return 'C'; }
+      if(/BANC?O\s*D\b/.test(s) || /\bBANK\s*D\b/.test(s) || s === 'D'){ return 'D'; }
     }
     return null;
   }
@@ -163,35 +105,6 @@
     // Colapsar separadores múltiples
     out = out.replace(/\\+/g,'/');
     return out;
-  }
-
-  // Enriquecer catálogo con metadata (une por id/ref/nombre normalizados)
-  function mergeCatalogWithMeta(catalog, meta){
-    const norm = (x) => String(x || '')
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9_-]+/g,'-');
-
-    const metaMap = new Map();
-    for(const m of meta){
-      const keys = [m.id, m.ref, m.nombre].filter(Boolean).map(norm).filter(Boolean);
-      for(const k of keys){ if(!metaMap.has(k)) metaMap.set(k, m); }
-    }
-
-    return catalog.map(item => {
-      const keys = [item.id, item.ref, item.nombre].filter(Boolean).map(norm).filter(Boolean);
-      let m = null;
-      for(const k of keys){ if(metaMap.has(k)){ m = metaMap.get(k); break; } }
-      if(!m) return item;
-
-      // Mantener imagen y id/ref del catálogo; completar campos desde meta
-      const merged = { ...item };
-      const candidates = ['nombre','ubicacion','banco','bank','notas','estado','ultima_revision','cantidad','numero_serie','serie','ficha_tecnica','simbolo'];
-      for(const f of candidates){ if(m[f] != null && merged[f] == null) merged[f] = m[f]; }
-      // Si meta tiene nombre más descriptivo, preferirlo
-      if(m.nombre && String(m.nombre).length > String(item.nombre||'').length){ merged.nombre = m.nombre; }
-      return merged;
-    });
   }
 
   // Pre-carga de imágenes del carrusel para una referencia
@@ -358,11 +271,18 @@
       if(target === 'upload' && uploadPanel) uploadPanel.hidden = false;
     }
 
-    if(tabImages){ tabImages.addEventListener('click', () => { setActive(tabImages); showPanels('images'); }); }
-    if(tabQR){ tabQR.addEventListener('click', () => { setActive(tabQR); showPanels('qr'); }); }
-    if(tabAIRecognize){ tabAIRecognize.addEventListener('click', () => { setActive(tabAIRecognize); showPanels('ai'); }); }
-    if(tabAITrain){ tabAITrain.addEventListener('click', () => { setActive(tabAITrain); showPanels('aitrain'); }); }
-    if(tabUpload){ tabUpload.addEventListener('click', () => { setActive(tabUpload); showPanels('upload'); }); }
+    if(tabImages){ tabImages.addEventListener('click', () => { setActive(tabImages); showPanels('images'); try{ if(window.AITrainCam){ window.AITrainCam.stopAITrainCamera?.(); } }catch(_){ } }); }
+    if(tabQR){ tabQR.addEventListener('click', () => { setActive(tabQR); showPanels('qr'); try{ if(window.AITrainCam){ window.AITrainCam.stopAITrainCamera?.(); } }catch(_){ } }); }
+    if(tabAIRecognize){ tabAIRecognize.addEventListener('click', () => { setActive(tabAIRecognize); showPanels('ai'); try{ if(window.AITrainCam){ window.AITrainCam.stopAITrainCamera?.(); } }catch(_){ } }); }
+    if(tabAITrain){
+      tabAITrain.addEventListener('click', () => {
+        setActive(tabAITrain);
+        showPanels('aitrain');
+        // Auto-start cv2 stream when opening AI Train
+        try{ if(window.AITrainCam && typeof window.AITrainCam.startAITrainCamera === 'function'){ window.AITrainCam.startAITrainCamera(); } }catch(_){ }
+      });
+    }
+    if(tabUpload){ tabUpload.addEventListener('click', () => { setActive(tabUpload); showPanels('upload'); try{ if(window.AITrainCam){ window.AITrainCam.stopAITrainCamera?.(); } }catch(_){ } }); }
 
     // Estado inicial: Imágenes activas
     if(tabImages){ setActive(tabImages); }
@@ -372,120 +292,6 @@
   function setStatus(msg){
     const el = document.getElementById('status');
     el.textContent = msg || '';
-  }
-
-  // --- AI Train: cargar índice desde backend y búsqueda local ---
-  async function loadTrainIndex(){
-    try{
-      const url = BACKEND.replace(/\/$/, '') + '/images_index';
-      const res = await fetch(url, { cache:'no-store' });
-      if(!res.ok) return [];
-      const payload = await res.json();
-      const items = Array.isArray(payload?.items) ? payload.items : [];
-      state.aiTrain.index = items;
-      return items;
-    }catch(_){ return []; }
-  }
-
-  function renderAiTrainResults(list){
-    const grid = document.getElementById('aiTrainResults');
-    if(!grid) return;
-    grid.innerHTML = '';
-    if(!list || !list.length){
-      const empty = document.createElement('div');
-      empty.className = 'empty';
-      empty.textContent = 'Sin resultados';
-      grid.appendChild(empty);
-      return;
-    }
-    const frag = document.createDocumentFragment();
-    for(const it of list){
-      const card = document.createElement('div');
-      card.className = 'card';
-      card.setAttribute('role','button');
-      card.setAttribute('tabindex','0');
-      card.dataset.ref = it.id;
-      card.setAttribute('aria-selected', String(state.aiTrain.selectedRef === it.id));
-      const img = document.createElement('img');
-      img.src = BACKEND.replace(/\/$/, '') + it.image; // e.g., /images/<ref>/file.jpg
-      img.alt = `Ref ${it.id}`;
-      img.loading = 'lazy';
-      const title = document.createElement('div');
-      title.className = 'title';
-      title.textContent = `${it.id} (${it.count})`;
-      card.append(img, title);
-      addActivationHandlers(card, () => selectAiTrainRef(it.id));
-      if(state.aiTrain.selectedRef === it.id){
-        card.classList.add('selected');
-        // Badge visual "Entrenando"
-        const badge = document.createElement('div');
-        badge.className = 'train-badge';
-        badge.textContent = 'Entrenando';
-        card.appendChild(badge);
-      }
-      frag.appendChild(card);
-    }
-    grid.appendChild(frag);
-  }
-
-  function selectAiTrainRef(ref){
-    state.aiTrain.selectedRef = String(ref);
-    // Re-render para marcar seleccionado
-    const q = document.getElementById('aiTrainSearch')?.value || '';
-    applyAiTrainSearch(q);
-    setStatus(`Referencia seleccionada para entrenamiento: ${state.aiTrain.selectedRef}`);
-    // Actualizar línea informativa bajo la cámara
-    const info = document.getElementById('aiTrainSelectedInfo');
-    if(info){ info.textContent = `Entrenando referencia: ${state.aiTrain.selectedRef}`; }
-
-    // Renderizar el sidebar como en la página principal (mínimo inmediato + enriquecido async)
-    try{ if(typeof renderSidebar === 'function'){ renderSidebar({ id: state.aiTrain.selectedRef, ref: state.aiTrain.selectedRef }); } }catch(_){ }
-    (async () => {
-      try{
-        if(typeof fetchValveDetail === 'function'){
-          const detail = await fetchValveDetail(String(state.aiTrain.selectedRef));
-          if(detail && typeof renderSidebar === 'function'){
-            renderSidebar({ ...detail, id: state.aiTrain.selectedRef, ref: state.aiTrain.selectedRef });
-          }
-        }
-      }catch(_){ /* noop */ }
-    })();
-    // Iniciar cámara automáticamente si está disponible
-    try{
-      if(window.AITrainCam && typeof window.AITrainCam.startAITrainCamera === 'function'){
-        window.AITrainCam.startAITrainCamera();
-      }
-      const vid = document.getElementById('aiTrainVideo');
-      if(vid && typeof vid.scrollIntoView === 'function'){
-        vid.scrollIntoView({ behavior:'smooth', block:'center' });
-      }
-    }catch(_){ /* noop */ }
-  }
-
-  function applyAiTrainSearch(query){
-    const q = String(query || '').trim().toLowerCase();
-    const countEl = document.getElementById('aiTrainSearchCount');
-    let list = state.aiTrain.index || [];
-    if(q){
-      list = list.filter(it => String(it.id).toLowerCase().includes(q));
-    }
-    renderAiTrainResults(list);
-    if(countEl) countEl.textContent = q ? `${list.length} resultados` : '';
-  }
-
-  async function setupAiTrainSearch(){
-    const input = document.getElementById('aiTrainSearch');
-    const btnClear = document.getElementById('btnAiTrainClear');
-    if(!input) return;
-    if(!state.aiTrain.index || !state.aiTrain.index.length){
-      await loadTrainIndex();
-    }
-    let timer = null;
-    const debounce = (fn) => { clearTimeout(timer); timer = setTimeout(fn, 140); };
-    input.addEventListener('input', () => debounce(() => applyAiTrainSearch(input.value)));
-    input.addEventListener('keydown', (e) => { if(e.key === 'Escape'){ input.value=''; applyAiTrainSearch(''); input.blur(); } });
-    if(btnClear){ btnClear.addEventListener('click', () => { input.value=''; applyAiTrainSearch(''); input.focus(); }); }
-    applyAiTrainSearch('');
   }
 
   // --- Búsqueda en la pestaña Imágenes ---
@@ -524,38 +330,14 @@
     apply('');
   }
 
-  // Carga de metadatos: intenta primero backend /valves y, si falla,
-  // cae a valvulas.json local. Devuelve array de objetos homogéneos.
+  // Carga de metadatos desde valvulas.json (si existe)
   async function loadMetadata(){
-    // 1) Backend /valves
-    try{
-      const url = BACKEND.replace(/\/$/, '') + '/valves';
-      const res = await fetch(url, { cache:'no-store' });
-      if(res.ok){
-        const payload = await res.json();
-        const items = Array.isArray(payload?.items) ? payload.items : [];
-        // Normaliza campos hacia un esquema común
-        return items.map(r => ({
-          id: r.id ?? r.valvula ?? r.numero_serie ?? undefined,
-          ref: r.valvula ?? r.id ?? undefined,
-          nombre: String(r.valvula ?? r.id ?? '').trim(),
-          ubicacion: r.ubicacion ?? null,
-          banco: null, // se derivará con getBank cuando aplique
-          numero_serie: r.numero_serie ?? null,
-          ficha_tecnica: r.ficha_tecnica ?? null,
-          simbolo: r.simbolo ?? null,
-        }));
-      }
-    }catch(_){ /* ignore */ }
-
-    // 2) Local JSON (si existe en /web)
     try{
       const res = await fetch(METADATA_JSON, { cache:'no-store' });
       if(!res.ok) return null;
       const data = await res.json();
-      if(Array.isArray(data)) return data;
-      if(data && Array.isArray(data.items)) return data.items;
-      return null;
+      if(!Array.isArray(data)) return null;
+      return data;
     }catch(_){
       return null;
     }
@@ -567,27 +349,45 @@
   // - Mapping: { "<ref>": ["img1.jpg", ...] }
   // - Legacy: { images: ["file1.jpg", ...] }
   async function discoverImagesFromFolder(){
-    // Modo forzado: solo lee index.json legacy y construye URLs planas
+    // Modo legado primero
     if(FORCE_LEGACY_STATIC){
       try{
         const res = await fetch(IMAGE_LIST_JSON, { cache:'no-store' });
-        if(!res.ok) return [];
-        const data = await res.json();
-        if(!data || !Array.isArray(data.images)) return [];
-        const out = data.images
-          .filter(x => typeof x === 'string')
-          .map(raw => {
-            const file = String(raw).trim().split('\\').pop().split('/').pop();
-            const base = file.replace(/\.[^.]+$/, '');
-            const url = normalizeCardPhotoUrl(IMAGE_FOLDER + file);
-            return { id: base, ref: base, imagen: url, nombre: base };
-          });
-        try{ console.log('[IMG] mode=legacy-forced sample=', out[0]?.imagen); }catch(_){ }
+        if(res.ok){
+          const data = await res.json();
+          if(data && Array.isArray(data.images) && data.images.length){
+            const out = data.images
+              .filter(x => typeof x === 'string')
+              .map(raw => {
+                const file = String(raw).trim().split('\\').pop().split('/').pop();
+                const base = file.replace(/\.[^.]+$/, '');
+                const url = normalizeCardPhotoUrl(IMAGE_FOLDER + file);
+                return { id: base, ref: base, imagen: url, nombre: base };
+              });
+            try{ console.log('[IMG] legacy ok. count=', out.length); }catch(_){ }
+            return out;
+          }
+        }
+      }catch(_){ /* continue to backend fallback */ }
+      // Fallback a backend si vacío o error
+      try{
+        const r = await fetch(`${BACKEND}/images_index`, { cache:'no-store' });
+        if(!r.ok) return [];
+        const data = await r.json();
+        const items = Array.isArray(data.items) ? data.items : [];
+        const out = items.map(it => ({
+          id: String(it.id),
+          ref: String(it.id),
+          // hacer URL absoluta al backend
+          imagen: /^https?:\/\//.test(it.image) ? it.image : `${BACKEND}${it.image}`,
+          nombre: String(it.id)
+        }));
+        try{ console.log('[IMG] backend fallback ok. count=', out.length); }catch(_){ }
         return out;
       }catch(_){ return []; }
     }
 
-    // Si se desactiva FORCE_LEGACY_STATIC, usar la lógica completa (backend/mapping)...
+    // Si se desactiva FORCE_LEGACY_STATIC, agregar aquí lógica extendida...
   }
 
   // Construye datos ficticios para cada imagen (sin prefijos de aviso)
@@ -632,10 +432,16 @@
   // Render del menú en grid
   function renderMenu(valvulas){
     const grid = document.getElementById('grid');
+    if(!grid){
+      try{ console.error('[RENDER] grid container not found'); }catch(_){ }
+      setStatus('Error: contenedor de grilla no encontrado.');
+      return;
+    }
     grid.innerHTML = '';
 
     // Aplica filtro por banco
     const filtered = filterValvulasByBank(valvulas);
+    try{ console.debug('[RENDER] items in =', Array.isArray(valvulas)? valvulas.length : 0, 'filtered =', filtered.length); }catch(_){ }
 
     if(!filtered || !filtered.length){
       // Mensaje discreto dentro del grid
@@ -696,7 +502,6 @@
   // Inicializar filtros al cargar
   window.addEventListener('DOMContentLoaded', () => {
     renderBankFilters();
-    setupAiTrainSearch();
   });
 
   function placeholderImage(){
@@ -1068,12 +873,6 @@
     card.append(head, wrap);
     body.appendChild(card);
 
-    // Contenedor extra (progreso de entrenamiento, métricas, etc.)
-    const extra = document.createElement('div');
-    extra.id = 'sidebarExtra';
-    extra.className = 'sidebar-extra';
-    body.appendChild(extra);
-
     // En pantallas pequeñas, hacer scroll al sidebar para que el usuario lo vea
     try{
       if(window.matchMedia && window.matchMedia('(max-width: 1023px)').matches){
@@ -1107,16 +906,12 @@
       catalog = buildFallbackValveData(images || []);
     }
 
-    // Enriquecer con metadata si existe (para tener ubicacion/banco y habilitar filtros)
-    if(Array.isArray(catalog) && Array.isArray(meta) && meta.length){
-      try{
-        catalog = mergeCatalogWithMeta(catalog, meta);
-      }catch(_){ /* noop */ }
-    }
-
     state.valvulas = catalog;
+    try{ console.debug('[INIT] catalog size =', catalog.length); }catch(_){ }
     renderMenu(catalog);
-    setStatus('');
+    // Mostrar un estado breve con el total cargado
+    setStatus(`Catálogo cargado: ${catalog.length} elementos`);
+    setTimeout(()=> setStatus(''), 1200);
     setupNavbar();
     setupSearch();
     // Inicializar sidebar vacío
@@ -1213,13 +1008,6 @@
     initApp, loadMetadata, discoverImagesFromFolder, buildFallbackValveData,
     renderMenu, onValveSelect, renderPanel, closePanel, sanitize, findValveId,
     openCamera, closeCamera, renderSidebar
-  };
-
-  // Expose AI Train selection to camera.js
-  window.AITrain = {
-    getSelectedRef: () => state.aiTrain.selectedRef,
-    setSelectedRef: (ref) => selectAiTrainRef(ref),
-    refreshIndex: () => loadTrainIndex().then(() => applyAiTrainSearch(document.getElementById('aiTrainSearch')?.value || '')),
   };
 
   document.addEventListener('DOMContentLoaded', initApp, { once:true });

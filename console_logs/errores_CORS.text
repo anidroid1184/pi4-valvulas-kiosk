@@ -1,0 +1,137 @@
+cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation cdn.tailwindcss.com:64:1711
+GET
+http://127.0.0.1:5500/favicon.ico
+[HTTP/1 404 File not found 0ms]
+
+XHRGET
+http://127.0.0.1:5500/valvulas.json
+[HTTP/1 404 File not found 6ms]
+
+[IMG] legacy ok. count= 32 app.js:367:26
+[INIT] catalog size = 32 app.js:910:18
+[RENDER] items in = 32 filtered = 32 2 app.js:444:18
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/stop (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200.
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200. 2
+[AITrain] Click stop camera.js:341:64
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/stop (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200.
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200. 2
+A resource is blocked by OpaqueResponseBlocking, please check browser console for details. stream
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200. 2
+A resource is blocked by OpaqueResponseBlocking, please check browser console for details. stream
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200. 2
+A resource is blocked by OpaqueResponseBlocking, please check browser console for details. stream
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200. 2
+A resource is blocked by OpaqueResponseBlocking, please check browser console for details. stream
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200. 2
+A resource is blocked by OpaqueResponseBlocking, please check browser console for details. stream
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200. 2
+A resource is blocked by OpaqueResponseBlocking, please check browser console for details. stream
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200. 2
+A resource is blocked by OpaqueResponseBlocking, please check browser console for details. stream
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200. 2
+A resource is blocked by OpaqueResponseBlocking, please check browser console for details. stream
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200. 2
+A resource is blocked by OpaqueResponseBlocking, please check browser console for details. stream
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200.
+[AITrain] Click start camera.js:338:65
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200. 2
+A resource is blocked by OpaqueResponseBlocking, please check browser console for details. stream
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200. 3
+A resource is blocked by OpaqueResponseBlocking, please check browser console for details. stream
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200. 3
+A resource is blocked by OpaqueResponseBlocking, please check browser console for details. stream
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200. 3
+A resource is blocked by OpaqueResponseBlocking, please check browser console for details. stream
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200. 3
+A resource is blocked by OpaqueResponseBlocking, please check browser console for details. stream
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200. 3
+A resource is blocked by OpaqueResponseBlocking, please check browser console for details. stream
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200. 3
+A resource is blocked by OpaqueResponseBlocking, please check browser console for details. stream
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200. 3
+A resource is blocked by OpaqueResponseBlocking, please check browser console for details. stream
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200. 3
+A resource is blocked by OpaqueResponseBlocking, please check browser console for details. stream
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200. 2
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200.
+A resource is blocked by OpaqueResponseBlocking, please check browser console for details. stream
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200. 3
+A resource is blocked by OpaqueResponseBlocking, please check browser console for details. stream
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200. 3
+A resource is blocked by OpaqueResponseBlocking, please check browser console for details. stream
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200. 3
+A resource is blocked by OpaqueResponseBlocking, please check browser console for details. stream
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200. 3
+A resource is blocked by OpaqueResponseBlocking, please check browser console for details. stream
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200.
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200. 2
+A resource is blocked by OpaqueResponseBlocking, please check browser console for details. stream
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200. 3
+A resource is blocked by OpaqueResponseBlocking, please check browser console for details. stream
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200.
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200. 2
+A resource is blocked by OpaqueResponseBlocking, please check browser console for details. stream
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200. 3
+A resource is blocked by OpaqueResponseBlocking, please check browser console for details. stream
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200. 3
+A resource is blocked by OpaqueResponseBlocking, please check browser console for details. stream
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200. 2
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200.
+A resource is blocked by OpaqueResponseBlocking, please check browser console for details. stream
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200.
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200. 2
+A resource is blocked by OpaqueResponseBlocking, please check browser console for details. stream
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200.
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200. 2
+A resource is blocked by OpaqueResponseBlocking, please check browser console for details. stream
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200. 3
+A resource is blocked by OpaqueResponseBlocking, please check browser console for details. stream
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200. 3
+A resource is blocked by OpaqueResponseBlocking, please check browser console for details. stream
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200. 3
+A resource is blocked by OpaqueResponseBlocking, please check browser console for details. stream
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200. 2
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200.
+A resource is blocked by OpaqueResponseBlocking, please check browser console for details. stream
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200. 3
+A resource is blocked by OpaqueResponseBlocking, please check browser console for details. stream
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200. 2
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200.
+A resource is blocked by OpaqueResponseBlocking, please check browser console for details. stream
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200. 3
+A resource is blocked by OpaqueResponseBlocking, please check browser console for details. stream
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200. 3
+A resource is blocked by OpaqueResponseBlocking, please check browser console for details. stream
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200. 2
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200.
+A resource is blocked by OpaqueResponseBlocking, please check browser console for details. stream
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200. 2
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200.
+A resource is blocked by OpaqueResponseBlocking, please check browser console for details. stream
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200. 3
+A resource is blocked by OpaqueResponseBlocking, please check browser console for details. stream
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200. 2
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200.
+A resource is blocked by OpaqueResponseBlocking, please check browser console for details. stream
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200. 2
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200.
+A resource is blocked by OpaqueResponseBlocking, please check browser console for details. stream
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200. 3
+A resource is blocked by OpaqueResponseBlocking, please check browser console for details. stream
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200. 3
+A resource is blocked by OpaqueResponseBlocking, please check browser console for details. stream
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200. 3
+A resource is blocked by OpaqueResponseBlocking, please check browser console for details. stream
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200. 3
+A resource is blocked by OpaqueResponseBlocking, please check browser console for details. stream
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200. 3
+A resource is blocked by OpaqueResponseBlocking, please check browser console for details. stream
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200. 3
+A resource is blocked by OpaqueResponseBlocking, please check browser console for details. stream
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200. 3
+A resource is blocked by OpaqueResponseBlocking, please check browser console for details. stream
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200. 3
+A resource is blocked by OpaqueResponseBlocking, please check browser console for details. stream
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200. 3
+A resource is blocked by OpaqueResponseBlocking, please check browser console for details. stream
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://localhost:8000/cv/start (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200.

@@ -1,5 +1,5 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException, Form
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, UploadFile, File, HTTPException, Form, Response
+from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional, List
 
@@ -9,6 +9,8 @@ from pyzbar.pyzbar import decode as zbar_decode
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 from datetime import datetime
+import threading
+import time
 
 from app.config import IMAGES_DIR
 from app.db.database import init_db, insert_scan, bulk_insert_valves, get_connection
@@ -19,10 +21,13 @@ from app.services.image_service import save_optimized_image_bytes
 
 app = FastAPI(title="Valve Vision API", version="0.1.0")
 
-# CORS para desarrollo local (landing en otro puerto)
+# CORS: permitir explícitamente el origen del servidor estático local
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # si quieres restringir: ["http://localhost", "http://127.0.0.1"]
+    allow_origins=[
+        "http://127.0.0.1:5500",
+        "http://localhost:5500",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -72,6 +77,193 @@ def health():
 def index_endpoint():
     count = index_dataset()
     return {"indexed": count}
+
+
+# --- cv2 Live bridge (stream + training capture) ---
+_cap_lock = threading.Lock()
+_cap: Optional[cv2.VideoCapture] = None
+_runner_thread: Optional[threading.Thread] = None
+_runner_stop = threading.Event()
+_last_jpeg: Optional[bytes] = None
+_training_ref: Optional[str] = None
+_training_active = False
+_train_sent = 0
+_train_failed = 0
+_train_total = 0
+_train_start_ts = 0.0
+
+_overlay_color = (250, 165, 96)  # BGR for light blue (#60A5FA)
+_overlay_thickness = 2
+
+
+def _ensure_dir(path: Path):
+    path.mkdir(parents=True, exist_ok=True)
+
+
+def _save_frame_for_ref(ref: str, frame: 'np.ndarray') -> bool:
+    try:
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+        dest_dir = Path(IMAGES_DIR) / ref
+        _ensure_dir(dest_dir)
+        dest_path = dest_dir / f"{ts}.jpg"
+        # usar image_service para optimizar
+        from app.services.image_service import save_optimized_image_bytes
+        # encode a JPEG in-memory then optimize-save (consistente con train_upload)
+        ok, buf = cv2.imencode('.jpg', frame, [int(cv2.IMWRITE_JPEG_QUALITY), 92])
+        if not ok:
+            return False
+        save_optimized_image_bytes(buf.tobytes(), dest_path)
+        return True
+    except Exception:
+        return False
+
+
+def _runner():
+    global _cap, _last_jpeg, _training_active, _train_sent, _train_failed, _train_total
+    try:
+        while not _runner_stop.is_set():
+            with _cap_lock:
+                cap = _cap
+            if cap is None or not cap.isOpened():
+                time.sleep(0.05)
+                continue
+            ok, frame = cap.read()
+            if not ok or frame is None:
+                time.sleep(0.01)
+                continue
+
+            # dibujar marco centrado (rectángulo)
+            h, w = frame.shape[:2]
+            box_w = int(w * 0.6)
+            box_h = int(h * 0.6)
+            x1 = (w - box_w) // 2
+            y1 = (h - box_h) // 2
+            x2 = x1 + box_w
+            y2 = y1 + box_h
+            cv2.rectangle(frame, (x1, y1), (x2, y2), _overlay_color, _overlay_thickness)
+
+            # entrenamiento activo: guardar ~2 fps
+            if _training_active and _training_ref:
+                # throttling a 2 fps
+                now = time.time()
+                # usar total como objetivo fijo (60) si arranca entreno
+                if _train_total <= 0:
+                    _train_total = 60
+                # rate-limit por tiempo
+                if (_train_sent + _train_failed) < _train_total:
+                    # Guardar 1 cada ~0.5s
+                    if (now - _runner.last_save) >= 0.5:
+                        ok_save = _save_frame_for_ref(_training_ref, frame)
+                        if ok_save:
+                            _train_sent += 1
+                        else:
+                            _train_failed += 1
+                        _runner.last_save = now
+                else:
+                    # alcanzamos total
+                    _training_active = False
+
+            # encode a JPEG para stream
+            ok2, buf = cv2.imencode('.jpg', frame, [int(cv2.IMWRITE_JPEG_QUALITY), 85])
+            if ok2:
+                _last_jpeg = buf.tobytes()
+            time.sleep(0.01)
+    finally:
+        pass
+
+
+_runner.last_save = 0.0  # type: ignore[attr-defined]
+
+
+def _open_camera_if_needed(index: int = 0):
+    global _cap
+    with _cap_lock:
+        if _cap is None or not _cap.isOpened():
+            _cap = cv2.VideoCapture(index)
+            if not _cap.isOpened():
+                _cap.release()
+                raise HTTPException(status_code=500, detail="No se pudo abrir la cámara cv2")
+
+
+def _start_runner_if_needed():
+    global _runner_thread
+    if _runner_thread is None or not _runner_thread.is_alive():
+        _runner_stop.clear()
+        _runner_thread = threading.Thread(target=_runner, daemon=True)
+        _runner_thread.start()
+
+
+@app.post("/cv/start")
+def cv_start(ref: Optional[str] = None, train: int = 0, index: int = 0):
+    """Abre la cámara cv2 y, opcionalmente, inicia modo entrenamiento.
+    - ref: referencia para guardar imágenes (si no viene, solo stream)
+    - train: 1 para activar entrenamiento (guardar), 0 solo stream
+    - index: índice de cámara
+    """
+    global _training_ref, _training_active, _train_sent, _train_failed, _train_total, _train_start_ts
+    _open_camera_if_needed(index=index)
+    _start_runner_if_needed()
+    if train:
+        _training_ref = (ref or '').strip()
+        if not _training_ref:
+            raise HTTPException(status_code=400, detail="Falta ref para entrenar")
+        _training_active = True
+        _train_sent = 0
+        _train_failed = 0
+        _train_total = 60
+        _train_start_ts = time.time()
+        _runner.last_save = 0.0  # reset
+    return {"running": True, "training": bool(train), "ref": _training_ref}
+
+
+@app.post("/cv/stop")
+def cv_stop():
+    """Detiene entrenamiento y/o cierra cámara si nadie la usa."""
+    global _training_active, _training_ref
+    _training_active = False
+    _training_ref = None
+    # no cerramos cap para permitir stream persistente; si quieres cerrar forzado:
+    return {"stopped": True}
+
+
+@app.get("/cv/status")
+def cv_status():
+    running = False
+    with _cap_lock:
+        running = _cap.isOpened() if _cap is not None else False
+    elapsed = int(time.time() - _train_start_ts) if _training_active else 0
+    return {
+        "running": running,
+        "training": _training_active,
+        "ref": _training_ref or "",
+        "sent": _train_sent,
+        "failed": _train_failed,
+        "total": _train_total,
+        "elapsed": elapsed,
+    }
+
+
+def _mjpeg_generator():
+    boundary = b"--frame"
+    while True:
+        frame = _last_jpeg
+        if frame is None:
+            time.sleep(0.05)
+            continue
+        yield boundary + b"\r\n" + b"Content-Type: image/jpeg\r\n\r\n" + frame + b"\r\n"
+        time.sleep(0.03)
+
+
+@app.get("/cv/stream")
+def cv_stream():
+    # asegurar cámara/runner activos para servir frames
+    try:
+        _open_camera_if_needed()
+        _start_runner_if_needed()
+    except HTTPException:
+        # si no hay cámara, retornar 503
+        return Response(status_code=503)
+    return StreamingResponse(_mjpeg_generator(), media_type="multipart/x-mixed-replace; boundary=frame")
 
 
 @app.post("/recognize")
