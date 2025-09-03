@@ -42,6 +42,14 @@
       const btnOpen = document.getElementById('btnAbrirCam');
       const btnClose = document.getElementById('btnCerrarCam');
       if(qrActive) return;
+      // Asegurar que el contenedor esté visible antes de iniciar html5-qrcode
+      if(panel) panel.hidden = false;
+      // Verificar que la librería esté cargada
+      if(typeof Html5Qrcode === 'undefined'){
+        console.error('[QR] Html5Qrcode no está disponible');
+        setStatus('Librería de QR no cargada');
+        return;
+      }
       if(!qr){ qr = new Html5Qrcode('qr-reader'); }
       await qr.start(
         { facingMode: 'environment' },
@@ -50,13 +58,12 @@
         onScanError
       );
       qrActive = true;
-      if(panel) panel.hidden = false;
       if(btnOpen) btnOpen.hidden = true;
       if(btnClose) btnClose.hidden = false;
-      setStatus('Cámara abierta (vista previa)');
+      setStatus('Lector QR activo');
     }catch(err){
       console.error(err);
-      setStatus('No fue posible acceder a la cámara');
+      setStatus('No fue posible acceder a la cámara (QR)');
     }
   }
 

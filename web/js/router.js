@@ -57,7 +57,8 @@
           break;
         }
         case 'upload': {
-          setHidden('imagesPanel', false);
+          // Solo mostrar el panel de carga (sin grid/cards)
+          setHidden('imagesPanel', true);
           setHidden('uploadPanel', false);
           stopAllCameras();
           break;
