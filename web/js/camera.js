@@ -30,8 +30,7 @@
       window.ValvulasApp.onValveSelect(id);
     }
     setStatus(`Código detectado: ${text} → id: ${id}`);
-    // Ir a la pestaña de Inicio/Imágenes para ver la información
-    try{ showImagesTab(); }catch(_){}
+    // Mantenerse en la pestaña actual (QR). El sidebar muestra la info.
     // Opcional: detener para evitar lecturas repetidas
     // if(qrActive) { closeCamera(); }
   }
@@ -80,52 +79,7 @@
     }catch(_){ setStatus(''); }
   }
 
-  function showImagesTab(){
-    const images = document.getElementById('imagesPanel');
-    const camera = document.getElementById('cameraPanel');
-    const ai = document.getElementById('aiPanel');
-    if(camera && !camera.hidden){ closeCamera(); }
-    if(ai && !ai.hidden){ stopAICamera(); }
-    if(images) images.hidden = false;
-    if(camera) camera.hidden = true;
-    if(ai) ai.hidden = true;
-  }
-
-  function showCameraTab(){
-    const images = document.getElementById('imagesPanel');
-    const camera = document.getElementById('cameraPanel');
-    const ai = document.getElementById('aiPanel');
-    if(images) images.hidden = true;
-    if(camera) camera.hidden = false;
-    if(ai) ai.hidden = true;
-    // abrir cámara automáticamente al cambiar de pestaña
-    openCamera();
-  }
-
-  function showAITab(){
-    const images = document.getElementById('imagesPanel');
-    const camera = document.getElementById('cameraPanel');
-    const ai = document.getElementById('aiPanel');
-    const aiTrain = document.getElementById('aiTrainPanel');
-    if(images) images.hidden = true;
-    if(camera){ camera.hidden = true; if(!camera.hidden){ closeCamera(); } }
-    if(ai) ai.hidden = false;
-    if(aiTrain) aiTrain.hidden = true;
-    startAICamera();
-  }
-
-  function showAITrainTab(){
-    const images = document.getElementById('imagesPanel');
-    const camera = document.getElementById('cameraPanel');
-    const ai = document.getElementById('aiPanel');
-    const aiTrain = document.getElementById('aiTrainPanel');
-    if(images) images.hidden = true;
-    if(camera){ camera.hidden = true; if(!camera.hidden){ closeCamera(); } }
-    if(ai){ ai.hidden = true; if(aiStream){ stopAICamera(); } }
-    if(aiTrain) aiTrain.hidden = false;
-    // Auto-iniciar stream cv2 al abrir la pestaña
-    try{ startAITrainCamera(); }catch(_){}
-  }
+  // Navegación de tabs delegada al Router (js/router.js)
 
   // Conservado por compatibilidad pero no se usa con html5-qrcode
   async function scanCodeFromPreview(){
@@ -317,10 +271,6 @@
   function init(){
     const btnOpen = document.getElementById('btnAbrirCam');
     const btnClose = document.getElementById('btnCerrarCam');
-    const btnTabImages = document.getElementById('btnTabImages');
-    const btnTabQR = document.getElementById('btnTabQR');
-    const btnTabAIRecognize = document.getElementById('btnTabAIRecognize');
-    const btnTabAITrain = document.getElementById('btnTabAITrain');
     const btnAIStart = document.getElementById('btnAIStart');
     const btnAIStop = document.getElementById('btnAIStop');
     const btnAICapture = document.getElementById('btnAICapture');
@@ -329,10 +279,6 @@
     const btnAiTrainCapture = document.getElementById('btnAiTrainCapture');
     if(btnOpen) btnOpen.addEventListener('click', openCamera);
     if(btnClose) btnClose.addEventListener('click', closeCamera);
-    if(btnTabImages) btnTabImages.addEventListener('click', showImagesTab);
-    if(btnTabQR) btnTabQR.addEventListener('click', showCameraTab);
-    if(btnTabAIRecognize) btnTabAIRecognize.addEventListener('click', showAITab);
-    if(btnTabAITrain) btnTabAITrain.addEventListener('click', showAITrainTab);
     if(btnAIStart) btnAIStart.addEventListener('click', startAICamera);
     if(btnAIStop) btnAIStop.addEventListener('click', stopAICamera);
     if(btnAICapture) btnAICapture.addEventListener('click', captureAndRecognize);
@@ -352,7 +298,7 @@
 
   // Expose for manual testing if needed
   window.CameraQR = { open: openCamera, close: closeCamera, isActive: () => qrActive };
-  window.CameraDemo = { openCamera, closeCamera, showImagesTab, showCameraTab, showAITab, startAICamera, stopAICamera, captureAndRecognize };
+  window.CameraDemo = { openCamera, closeCamera, startAICamera, stopAICamera, captureAndRecognize };
   
   // ---- AI Train implementation ----
   let aiTrainStatusTimer = null; // polling status

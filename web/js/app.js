@@ -70,14 +70,11 @@
   const PREFETCH_PER_REF = 3;   // cuántas imágenes del carrusel preparar
   const HIGH_PRIORITY_FIRST = 12; // cuántas portadas priorizar en la grilla
 
-  // Utils
+  // Utils (delegated to window.Utils)
   function sanitize(text) {
-    return String(text)
-      .replaceAll('&', '&amp;')
-      .replaceAll('<', '&lt;')
-      .replaceAll('>', '&gt;')
-      .replaceAll('"', '&quot;')
-      .replaceAll("'", '&#39;');
+    return (window.Utils && typeof window.Utils.sanitize === 'function')
+      ? window.Utils.sanitize(text)
+      : String(text || '');
   }
 
   // Detecta el banco (A/B/C/D) desde un objeto válvula. Usa campo 'banco' si existe
@@ -99,12 +96,9 @@
 
   // Normaliza URLs por si un índice antiguo incluye subcarpetas espurias como "images/"
   function normalizeCardPhotoUrl(url) {
-    let out = String(url || '');
-    // Quitar cualquier segmento '/images/' justo después de 'card-photos/'
-    out = out.replace(/(card-photos\/)images\//i, '$1');
-    // Colapsar separadores múltiples
-    out = out.replace(/\\+/g, '/');
-    return out;
+    return (window.Utils && typeof window.Utils.normalizeCardPhotoUrl === 'function')
+      ? window.Utils.normalizeCardPhotoUrl(url)
+      : String(url || '');
   }
 
   // Pre-carga de imágenes del carrusel para una referencia
@@ -256,37 +250,21 @@
       }
     }
 
-    function showPanels(target) {
-      // Regla: imagesPanel y aiTrainPanel siempre visibles
-      if (imagesPanel) imagesPanel.hidden = false;
-      if (aiTrainPanel) aiTrainPanel.hidden = false;
+    // Navegación centralizada vía Router
+    const go = (target, tabEl) => {
+      setActive(tabEl);
+      try { window.Router && typeof window.Router.navigate === 'function' ? window.Router.navigate(target) : null; } catch (_) {}
+    };
 
-      // Los demás paneles se controlan por target
-      if (cameraPanel) cameraPanel.hidden = true;
-      if (aiPanel) aiPanel.hidden = true;
-      if (uploadPanel) uploadPanel.hidden = true;
+    if (tabImages) { tabImages.addEventListener('click', () => go('images', tabImages)); }
+    if (tabQR) { tabQR.addEventListener('click', () => go('qr', tabQR)); }
+    if (tabAIRecognize) { tabAIRecognize.addEventListener('click', () => go('ai', tabAIRecognize)); }
+    if (tabAITrain) { tabAITrain.addEventListener('click', () => go('aitrain', tabAITrain)); }
+    if (tabUpload) { tabUpload.addEventListener('click', () => go('upload', tabUpload)); }
 
-      if (target === 'qr' && cameraPanel) cameraPanel.hidden = false;
-      if (target === 'ai' && aiPanel) aiPanel.hidden = false;
-      if (target === 'upload' && uploadPanel) uploadPanel.hidden = false;
-    }
-
-    if (tabImages) { tabImages.addEventListener('click', () => { setActive(tabImages); showPanels('images'); try { if (window.AITrainCam) { window.AITrainCam.stopAITrainCamera?.(); } } catch (_) { } }); }
-    if (tabQR) { tabQR.addEventListener('click', () => { setActive(tabQR); showPanels('qr'); try { if (window.AITrainCam) { window.AITrainCam.stopAITrainCamera?.(); } } catch (_) { } }); }
-    if (tabAIRecognize) { tabAIRecognize.addEventListener('click', () => { setActive(tabAIRecognize); showPanels('ai'); try { if (window.AITrainCam) { window.AITrainCam.stopAITrainCamera?.(); } } catch (_) { } }); }
-    if (tabAITrain) {
-      tabAITrain.addEventListener('click', () => {
-        setActive(tabAITrain);
-        showPanels('aitrain');
-        // Auto-start cv2 stream when opening AI Train
-        try { if (window.AITrainCam && typeof window.AITrainCam.startAITrainCamera === 'function') { window.AITrainCam.startAITrainCamera(); } } catch (_) { }
-      });
-    }
-    if (tabUpload) { tabUpload.addEventListener('click', () => { setActive(tabUpload); showPanels('upload'); try { if (window.AITrainCam) { window.AITrainCam.stopAITrainCamera?.(); } } catch (_) { } }); }
-
-    // Estado inicial: ambas vistas visibles
+    // Estado inicial: activar tab y navegar
     if (tabImages) { setActive(tabImages); }
-    showPanels('images');
+    try { window.Router && window.Router.navigate('images'); } catch (_) {}
   }
 
   function setStatus(msg) {
@@ -422,11 +400,9 @@
   }
 
   function tituloFromFilename(base) {
-    const pretty = base
-      .replace(/[_-]+/g, ' ')
-      .replace(/\b(valvula)\b/i, 'Válvula')
-      .trim();
-    return pretty.charAt(0).toUpperCase() + pretty.slice(1);
+    return (window.Utils && typeof window.Utils.tituloFromFilename === 'function')
+      ? window.Utils.tituloFromFilename(base)
+      : String(base || '');
   }
 
   // Render del menú en grid
@@ -514,22 +490,17 @@
   });
 
   function placeholderImage() {
-    const ph = document.createElement('div');
-    ph.className = 'placeholder';
-    ph.textContent = 'Imagen no disponible';
-    return ph;
+    return (window.Utils && typeof window.Utils.placeholderImage === 'function')
+      ? window.Utils.placeholderImage()
+      : document.createElement('div');
   }
 
   // Handlers de activación accesibles (click/touch/teclado)
   function addActivationHandlers(el, handler) {
+    if (window.Utils && typeof window.Utils.addActivationHandlers === 'function') {
+      return window.Utils.addActivationHandlers(el, handler);
+    }
     el.addEventListener('click', handler);
-    el.addEventListener('pointerup', (e) => { if (e.pointerType) { handler(); } });
-    el.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        handler();
-      }
-    });
   }
 
   async function onValveSelect(id) {
@@ -557,58 +528,8 @@
 
   // Resolver de código escaneado a ID válido del catálogo
   function findValveId(code) {
-    if (!code) return null;
-    const raw = String(code).trim();
-
-    // 1) Intentar parsear prefijos/URLs conocidos conservando el ID
-    //    Soporta: "VALVE:<id>", "valve://<id>", ".../valve/<id>", "...?id=<id>"
-    let extracted = null;
-    try {
-      // VALVE:123 o valve:123
-      let m = raw.match(/^valve:\s*([^\s?#/]+)$/i);
-      if (m && m[1]) extracted = m[1];
-
-      // valve://123
-      if (!extracted) {
-        m = raw.match(/^valve:\/\/([^\s?#/]+)$/i);
-        if (m && m[1]) extracted = m[1];
-      }
-
-      // URL con /valve/<id>
-      if (!extracted) {
-        m = raw.match(/\/valve\/([A-Za-z0-9_-]+)/i);
-        if (m && m[1]) extracted = m[1];
-      }
-
-      // URL/query con ?id=<id>
-      if (!extracted) {
-        m = raw.match(/[?&]id=([A-Za-z0-9_-]+)/i);
-        if (m && m[1]) extracted = m[1];
-      }
-    } catch (_) { /* noop */ }
-
-    const candidates = [];
-    if (extracted) {
-      candidates.push(extracted);
-    }
-    candidates.push(raw);
-
-    // Para cada candidato, probar variantes: tal cual, lower y saneado
-    for (const cand of candidates) {
-      const c1 = cand;
-      const c2 = String(cand).toLowerCase();
-      const c3 = c2.replace(/[^a-z0-9_-]+/g, '-');
-      if (state.map.has(c1)) return c1;
-      if (state.map.has(c2)) return c2;
-      if (state.map.has(c3)) return c3;
-    }
-
-    // intento por nombre exacto (insensible a mayúsculas)
-    const lower = String(extracted || raw).toLowerCase();
-    for (const [id, v] of state.map.entries()) {
-      if (String(v.nombre).toLowerCase() === lower) {
-        return id;
-      }
+    if (window.Store && typeof window.Store.findValveIdPure === 'function') {
+      return window.Store.findValveIdPure(state.map, code);
     }
     return null;
   }

@@ -58,8 +58,7 @@
           </div>
         </section>
 
-        <!-- Cámara / Vista previa (no utilizada) -->
-        <!--
+        <!-- Cámara / Vista previa -->
         <section id="cameraPanel" class="camera-panel" aria-label="Vista previa de cámara" hidden>
           <div class="camera-header">
             <h2 class="camera-title">Cámara</h2>
@@ -79,10 +78,8 @@
             <span class="subtitle" style="margin-left:8px">Vista previa sin escaneo</span>
           </div>
         </section>
-        -->
 
-        <!-- Reconocer con AI (no utilizado) -->
-        <!--
+        <!-- Reconocer con AI -->
         <section id="aiPanel" class="ai-panel" aria-label="Reconocer con IA" hidden>
           <div class="camera-header">
             <h2 class="camera-title">Reconocer con IA - Válvulas</h2>
@@ -104,7 +101,6 @@
           </div>
           <div class="ai-result" id="aiResult" aria-live="polite"></div>
         </section>
-        -->
 
         <!-- Entrenar AI / Búsqueda y captura de múltiples fotos -->
         <section id="aiTrainPanel" class="ai-panel" aria-label="Entrenar IA" hidden>
@@ -174,6 +170,9 @@
     <div id="modal-desc" class="modal-body"></div>
   </div>
 
+  <script src="js/utils.js" defer></script>
+  <script src="js/store.js" defer></script>
+  <script src="js/router.js" defer></script>
   <script src="js/app.js?v=3" defer></script>
   <!-- html5-qrcode offline -->
   <script src="vendor/html5-qrcode/html5-qrcode.min.js" defer></script>
