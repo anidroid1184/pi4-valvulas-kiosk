@@ -266,6 +266,23 @@ def cv_stream():
     return StreamingResponse(_mjpeg_generator(), media_type="multipart/x-mixed-replace; boundary=frame")
 
 
+@app.get("/cv/snapshot")
+def cv_snapshot():
+    """Return the latest single JPEG frame from the live cv2 stream.
+    Responds 503 if no frame is available yet.
+    """
+    # Ensure camera/runner are up so we can have frames
+    try:
+        _open_camera_if_needed()
+        _start_runner_if_needed()
+    except HTTPException:
+        return Response(status_code=503)
+    frame = _last_jpeg
+    if frame is None:
+        return Response(status_code=503)
+    return Response(content=frame, media_type="image/jpeg")
+
+
 @app.post("/recognize")
 async def recognize(image: UploadFile = File(...)):
     data = await image.read()

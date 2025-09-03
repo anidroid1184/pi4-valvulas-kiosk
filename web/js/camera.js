@@ -7,10 +7,12 @@
   // QR scanner (html5-qrcode)
   let qr = null;
   let qrActive = false;
+  let qrStarting = false;
 
-  // AI camera stream (getUserMedia)
-  let mediaStream = null;
-  let aiStream = null;
+  // AI Recognize via backend cv2 (MJPEG stream)
+  let mediaStream = null; // legacy
+  let aiStream = null;    // legacy
+  let aiStarting = false;
   // AI Train camera stream and loop
   let aiTrainStream = null;
   let aiTrainRunning = false;
@@ -41,30 +43,54 @@
       const panel = document.getElementById('cameraPanel');
       const btnOpen = document.getElementById('btnAbrirCam');
       const btnClose = document.getElementById('btnCerrarCam');
-      if(qrActive) return;
+      if(qrActive || qrStarting) return;
+      qrStarting = true;
       // Asegurar que el contenedor esté visible antes de iniciar html5-qrcode
       if(panel) panel.hidden = false;
+      // Asegurar exclusión: detener cámara AI si estuviera activa
+      try { window.CameraDemo && typeof window.CameraDemo.stopAICamera === 'function' && window.CameraDemo.stopAICamera(); } catch(_) {}
       // Verificar que la librería esté cargada
       if(typeof Html5Qrcode === 'undefined'){
         console.error('[QR] Html5Qrcode no está disponible');
         setStatus('Librería de QR no cargada');
+        qrStarting = false;
         return;
       }
       if(!qr){ qr = new Html5Qrcode('qr-reader'); }
-      await qr.start(
-        { facingMode: 'environment' },
-        { fps: 10, qrbox: { width: 320, height: 320 } },
-        onScanSuccess,
-        onScanError
-      );
+      try{
+        await qr.start(
+          { facingMode: 'environment' },
+          { fps: 10, qrbox: { width: 320, height: 320 } },
+          onScanSuccess,
+          onScanError
+        );
+      } catch(e) {
+        // Algunos navegadores arrojan: "Cannot transition to a new state, already under transition"
+        const msg = String(e && e.message || e);
+        if(msg.toLowerCase().includes('already under transition')){
+          try { await qr.stop(); } catch(_) {}
+          try { await qr.clear(); } catch(_) {}
+          await new Promise(r => setTimeout(r, 150));
+          await qr.start(
+            { facingMode: 'environment' },
+            { fps: 10, qrbox: { width: 320, height: 320 } },
+            onScanSuccess,
+            onScanError
+          );
+        } else {
+          throw e;
+        }
+      }
       qrActive = true;
       if(btnOpen) btnOpen.hidden = true;
       if(btnClose) btnClose.hidden = false;
       setStatus('Lector QR activo');
     }catch(err){
       console.error(err);
-      setStatus('No fue posible acceder a la cámara (QR)');
+      const msg = (err && err.name === 'NotReadableError') ? 'El dispositivo está en uso por otra pestaña o aplicación' : 'No fue posible acceder a la cámara (QR)';
+      setStatus(msg);
     }
+    finally { qrStarting = false; }
   }
 
   async function closeCamera(){
@@ -78,6 +104,7 @@
         try{ await qr.clear(); }catch(_){/* noop */}
       }
       qrActive = false;
+      qrStarting = false;
 
       if(panel) panel.hidden = true;
       if(btnOpen) btnOpen.hidden = false;
@@ -154,35 +181,47 @@
 
   async function startAICamera(){
     try{
-      if(aiStream) return;
-      const video = document.getElementById('aiVideo');
+      if(aiStarting) return;
+      aiStarting = true;
+      const img = document.getElementById('aiMJPEG');
       const btnStart = document.getElementById('btnAIStart');
       const btnStop = document.getElementById('btnAIStop');
       const btnCap = document.getElementById('btnAICapture');
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio:false });
-      aiStream = stream;
-      if(video) video.srcObject = stream;
+      // Exclusión: cerrar QR si estuviera activo
+      try { window.CameraQR && typeof window.CameraQR.close === 'function' && window.CameraQR.close(); } catch(_) {}
+      setStatus('Iniciando cámara cv2…');
+      try{ await fetch(`${BACKEND}/cv/start`, { method:'POST' }); }catch(_){ /* offline? */ }
+      if(img){
+        const onLoad = () => setStatus('Cámara AI (cv2) lista');
+        const onError = async () => {
+          try{ await fetch(`${BACKEND}/cv/start`, { method:'POST' }); }catch(_){ }
+          const base = `${BACKEND}/cv/stream`;
+          img.src = base + (base.includes('?')?'&':'?') + 't=' + Date.now();
+        };
+        try{ img.removeEventListener('load', onLoad); img.removeEventListener('error', onError); }catch(_){ }
+        img.addEventListener('load', onLoad);
+        img.addEventListener('error', onError);
+        if(!img.src){ img.src = `${BACKEND}/cv/stream?t=` + Date.now(); }
+      }
       if(btnStart) btnStart.hidden = true;
       if(btnStop) btnStop.hidden = false;
       if(btnCap) btnCap.disabled = false;
-      setStatus('Cámara AI lista');
     }catch(err){
       console.error(err);
-      setStatus('No fue posible acceder a la cámara (AI)');
+      setStatus('No fue posible iniciar la cámara AI (cv2)');
+    } finally {
+      aiStarting = false;
     }
   }
 
   function stopAICamera(){
     try{
-      const video = document.getElementById('aiVideo');
+      const img = document.getElementById('aiMJPEG');
       const btnStart = document.getElementById('btnAIStart');
       const btnStop = document.getElementById('btnAIStop');
       const btnCap = document.getElementById('btnAICapture');
-      if(aiStream){
-        for(const t of aiStream.getTracks()) t.stop();
-        aiStream = null;
-      }
-      if(video) video.srcObject = null;
+      try{ fetch(`${BACKEND}/cv/stop`, { method:'POST' }); }catch(_){ }
+      if(img){ img.src = ''; }
       if(btnStart) btnStart.hidden = false;
       if(btnStop) btnStop.hidden = true;
       if(btnCap) btnCap.disabled = true;
@@ -191,31 +230,24 @@
 
   async function captureAndRecognize(){
     try{
-      const video = document.getElementById('aiVideo');
-      const canvas = document.getElementById('aiCanvas');
       const result = document.getElementById('aiResult');
       const btnAICapture = document.getElementById('btnAICapture');
-      if(!video || !canvas){ return; }
-      // Pintar frame actual a canvas
-      const w = video.videoWidth || 640;
-      const h = video.videoHeight || 480;
-      canvas.width = w; canvas.height = h;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(video, 0, 0, w, h);
-      const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.85));
       if(result){ result.textContent = 'Procesando…'; }
       if(btnAICapture){ btnAICapture.disabled = true; }
 
-      // Enviar a la API local
+      // Obtener snapshot desde backend cv2
+      const snap = await fetch(`${BACKEND}/cv/snapshot`, { method:'GET', cache:'no-store' });
+      if(!snap.ok){ setStatus('No hay frame disponible (cv2)'); if(btnAICapture) btnAICapture.disabled = false; return; }
+      const blob = await snap.blob();
+
+      // Enviar a la API local de reconocimiento
       const form = new FormData();
       form.append('image', blob, 'frame.jpg');
 
-      let data = null;
       try{
         const r = await fetch(`${BACKEND}/recognize`, { method:'POST', body: form });
         if(r.ok){
-          data = await r.json();
-          // Actualizar guía de AI según confianza
+          const data = await r.json();
           updateAIGuideText(typeof data.confidence === 'number' ? data.confidence : 0);
           renderAIResult(data);
         } else if(r.status === 404){
