@@ -14,7 +14,7 @@
     D: '#50B95A'
   };
   let activeBanks = new Set();
-  // Renderiza los botones de filtro por banco
+  // Renderiza los botones de filtro por banco (delegando estado a Filters si está disponible)
   function renderBankFilters() {
     const container = document.getElementById('bankFilters');
     if (!container) return;
@@ -22,21 +22,30 @@
     const chips = container.querySelectorAll('.bank-chip');
     chips.forEach(chip => {
       const bank = chip.textContent.trim();
-      chip.classList.toggle('selected', activeBanks.has(bank));
-      chip.setAttribute('aria-pressed', activeBanks.has(bank));
+      const current = (window.Filters && typeof window.Filters.getActiveBanks === 'function')
+        ? window.Filters.getActiveBanks()
+        : activeBanks;
+      chip.classList.toggle('selected', current.has(bank));
+      chip.setAttribute('aria-pressed', current.has(bank));
       chip.onclick = () => {
-        if (activeBanks.has(bank)) {
-          activeBanks.delete(bank);
+        if (window.Filters && typeof window.Filters.toggle === 'function') {
+          window.Filters.toggle(bank);
+          // Suscripción global se encargará de re-renderizar
+          renderBankFilters();
         } else {
-          activeBanks.add(bank);
+          if (activeBanks.has(bank)) {
+            activeBanks.delete(bank);
+          } else {
+            activeBanks.add(bank);
+          }
+          renderBankFilters();
+          renderMenu(filterValvulasByBank(state.valvulas));
         }
-        renderBankFilters();
-        renderMenu(filterValvulasByBank(state.valvulas));
       };
     });
   }
 
-  // Filtra válvulas por bancos activos
+  // Filtra válvulas por bancos activos (fallback si no existe Filters)
   function filterValvulasByBank(valvulas) {
     if (!activeBanks.size) return valvulas;
     return valvulas.filter(v => {
@@ -253,7 +262,7 @@
     // Navegación centralizada vía Router
     const go = (target, tabEl) => {
       setActive(tabEl);
-      try { window.Router && typeof window.Router.navigate === 'function' ? window.Router.navigate(target) : null; } catch (_) {}
+      try { window.Router && typeof window.Router.navigate === 'function' ? window.Router.navigate(target) : null; } catch (_) { }
     };
 
     if (tabImages) { tabImages.addEventListener('click', () => go('images', tabImages)); }
@@ -264,7 +273,7 @@
 
     // Estado inicial: activar tab y navegar
     if (tabImages) { setActive(tabImages); }
-    try { window.Router && window.Router.navigate('images'); } catch (_) {}
+    try { window.Router && window.Router.navigate('images'); } catch (_) { }
   }
 
   function setStatus(msg) {
@@ -415,8 +424,10 @@
     }
     grid.innerHTML = '';
 
-    // Aplica filtro por banco
-    const filtered = filterValvulasByBank(valvulas);
+    // Aplica filtro por banco (usar Filters si está disponible)
+    const filtered = (window.Filters && typeof window.Filters.applyBank === 'function')
+      ? window.Filters.applyBank(valvulas)
+      : filterValvulasByBank(valvulas);
     try { console.debug('[RENDER] items in =', Array.isArray(valvulas) ? valvulas.length : 0, 'filtered =', filtered.length); } catch (_) { }
 
     if (!filtered || !filtered.length) {
@@ -484,9 +495,18 @@
 
     grid.appendChild(frag);
   }
-  // Inicializar filtros al cargar
+  // Inicializar filtros al cargar y suscribirse a cambios globales
   window.addEventListener('DOMContentLoaded', () => {
     renderBankFilters();
+    try {
+      if (window.Filters && typeof window.Filters.onChange === 'function') {
+        window.Filters.onChange(() => {
+          // Re-renderizar grilla principal cuando cambie el filtro de bancos
+          renderMenu(state.valvulas);
+          // No tocar panel de Entrenar IA aquí: lo maneja su propio módulo
+        });
+      }
+    } catch (_) { /* noop */ }
   });
 
   function placeholderImage() {
