@@ -1,0 +1,63 @@
+(index):64 cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation
+(anonymous) @ (index):64
+(anonymous) @ (index):64
+app.js?v=3:323 
+            
+            
+           GET http://127.0.0.1:5500/valvulas.json 404 (File not found)
+loadMetadata @ app.js?v=3:323
+initApp @ app.js?v=3:841
+app.js?v=3:354 [IMG] legacy ok. count= 32
+[...document.querySelectorAll('script[src]')].map(s => s.getAttribute('src'))
+typeof window.ValvulasApp
+typeof window.Store
+typeof window.Filters
+'object'
+window.Store?.getState()?.valvulas?.length
+0
+// Intenta flujo normal
+window.ValvulasApp?.loadMetadata?.(); // Puede fallar por 404
+
+// Usa descubrimiento de imágenes como fallback
+window.ValvulasApp?.discoverImagesFromFolder?.();
+
+// Verifica que ahora haya datos
+window.Store?.getState()?.valvulas?.length
+(window.Store?.getState()?.valvulas || []).slice(0,2)
+VM288:8 Uncaught TypeError: window.Store?.getState(...)?.valvulas?.length is not a function
+    at <anonymous>:8:37
+(anonymous) @ VM288:8
+app.js?v=3:323 
+            
+            
+           GET http://127.0.0.1:5500/valvulas.json 404 (File not found)
+loadMetadata @ app.js?v=3:323
+(anonymous) @ VM288:2
+app.js?v=3:354 [IMG] legacy ok. count= 32
+// Suscríbete a cambios para ver disparos
+window.Filters?.onChange?.(b => console.log('[Filters.onChange]', [...b]));
+
+// Alterna banco y observa cambios de grilla
+window.Filters?.toggle?.('A');
+const all = window.Store?.getState()?.valvulas || [];
+const filt = window.Filters?.applyBank?.(all) || all;
+({ all: all.length, filtered: filt.length, grid: document.querySelectorAll('#grid .card').length })
+
+// Fuerza re-render si la grilla no refresca
+window.ValvulasApp?.renderMenu?.(window.Store.getState().valvulas);
+VM292:2 [Filters.onChange] ['A']
+undefined
+const gb = window.Filters?.getActiveBanks?.();
+[...document.querySelectorAll('#bankFilters .bank-chip')].map(b => ({
+  chip: b.textContent.trim(),
+  chipSelected: b.classList.contains('selected'),
+  filtersHas: gb?.has?.(b.textContent.trim())
+}))
+(4) [{…}, {…}, {…}, {…}]
+// Prueba rápida de la lógica actual
+const active = new Set(['A']);
+const sample = [{ubicacion:'A1'},{ubicacion:'B2'},{ubicacion:'C'}];
+window.Filters?.toggle?.('A'); // activar A
+window.Filters?.applyBank?.(sample); // debería devolver solo [{ubicacion:'A1'}]
+VM292:2 [Filters.onChange] []
+(3) [{…}, {…}, {…}]
