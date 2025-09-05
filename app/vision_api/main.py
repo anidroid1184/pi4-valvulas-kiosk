@@ -283,6 +283,46 @@ def cv_snapshot():
     return Response(content=frame, media_type="image/jpeg")
 
 
+@app.get("/cv/devices")
+def cv_devices(max_index: int = 5, timeout_ms: int = 120):
+    """Probe cv2 camera indices from 0..max_index and return the ones that open.
+
+    Response: { devices: [ { index: int, name: str } ] }
+    Notes: On some systems probing may blink LEDs. We keep it quick and release immediately.
+    """
+    devices = []
+    try:
+        mi = max(0, int(max_index))
+    except Exception:
+        mi = 5
+    try:
+        to = max(0, int(timeout_ms))
+    except Exception:
+        to = 120
+    for i in range(mi + 1):
+        cap = None
+        try:
+            cap = cv2.VideoCapture(i)
+            if not cap or not cap.isOpened():
+                continue
+            # Try read one frame with a small timeout
+            if to:
+                cap.set(cv2.CAP_PROP_POS_MSEC, to)
+            ok, _ = cap.read()
+            if ok:
+                devices.append({"index": i, "name": f"Device {i}"})
+        except Exception:
+            # ignore failures
+            pass
+        finally:
+            try:
+                if cap is not None:
+                    cap.release()
+            except Exception:
+                pass
+    return JSONResponse({"devices": devices})
+
+
 @app.post("/recognize")
 async def recognize(image: UploadFile = File(...)):
     data = await image.read()

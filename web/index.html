@@ -17,7 +17,8 @@
 
   <!-- Navbar -->
   <nav class="app-nav" aria-label="Barra de navegación">
-    <button id="btnNavToggle" class="nav-toggle" type="button" aria-expanded="false" aria-controls="navItems">Menú</button>
+    <button id="btnNavToggle" class="nav-toggle" type="button" aria-expanded="false"
+      aria-controls="navItems">Menú</button>
     <div id="navItems" class="nav-items" role="menubar">
       <button id="btnTabImages" class="nav-btn" type="button" role="menuitem">Imágenes</button>
       <button id="btnTabQR" class="nav-btn" type="button" role="menuitem">Lector QR</button>
@@ -43,7 +44,8 @@
         <section id="imagesPanel" aria-label="Menú de válvulas">
           <div class="search-bar" role="search">
             <label for="searchBox" class="sr-only">Buscar referencia</label>
-            <input id="searchBox" type="search" autocomplete="off" placeholder="Buscar por referencia o nombre…" aria-label="Buscar por referencia o nombre">
+            <input id="searchBox" type="search" autocomplete="off" placeholder="Buscar por referencia o nombre…"
+              aria-label="Buscar por referencia o nombre">
             <button id="btnClearSearch" type="button" class="nav-btn" aria-label="Limpiar búsqueda">Limpiar</button>
             <span id="searchCount" class="subtitle" aria-live="polite"></span>
             <span id="bankFilters" class="bank-filters" style="margin-left:18px;vertical-align:middle;">
@@ -89,12 +91,15 @@
               <img id="aiMJPEG" alt="AI stream" />
               <div class="overlay-guide" aria-hidden="true">
                 <div class="frame center-box"></div>
-                <div class="guide-text" id="aiGuideText">Alinea la válvula dentro del marco. Acércate o aléjate hasta que se vea nítida.</div>
+                <div class="guide-text" id="aiGuideText">Alinea la válvula dentro del marco. Acércate o aléjate hasta
+                  que se vea nítida.</div>
               </div>
             </div>
             <canvas id="aiCanvas" hidden></canvas>
           </div>
           <div class="camera-footer">
+            <label for="aiDevice" class="sr-only">Dispositivo</label>
+            <select id="aiDevice" title="Seleccionar cámara cv2" class="nav-select" style="margin-right:8px"></select>
             <button id="btnAIStart" class="nav-btn" type="button">Iniciar cámara</button>
             <button id="btnAIStop" class="nav-btn" type="button" hidden>Detener cámara</button>
             <button id="btnAICapture" class="nav-btn" type="button" disabled>Capturar y reconocer</button>
@@ -110,7 +115,8 @@
           <div class="camera-body">
             <div class="search-bar" role="search">
               <label for="aiTrainSearch" class="sr-only">Buscar por nombre o número de serie</label>
-              <input id="aiTrainSearch" type="search" autocomplete="off" placeholder="Buscar por nombre o número de serie…" aria-label="Buscar por nombre o número de serie">
+              <input id="aiTrainSearch" type="search" autocomplete="off"
+                placeholder="Buscar por nombre o número de serie…" aria-label="Buscar por nombre o número de serie">
               <button id="btnAiTrainClear" type="button" class="nav-btn" aria-label="Limpiar búsqueda">Limpiar</button>
               <span id="aiTrainSearchCount" class="subtitle" aria-live="polite"></span>
             </div>
@@ -129,7 +135,8 @@
             <div class="sidebar-extra">
               <div class="train-progress">
                 <h4>Progreso de entrenamiento</h4>
-                <div class="progress" aria-label="Progreso de subida de imágenes" role="progressbar" aria-valuemin="0" aria-valuemax="100">
+                <div class="progress" aria-label="Progreso de subida de imágenes" role="progressbar" aria-valuemin="0"
+                  aria-valuemax="100">
                   <div id="aiTrainProgressFill" class="progress__fill" style="width:0%"></div>
                 </div>
                 <div id="aiTrainProgressMeta" class="progress__meta">0/60 subidas • 00:00</div>
@@ -137,6 +144,8 @@
             </div>
           </div>
           <div class="camera-footer">
+            <label for="aiTrainDevice" class="sr-only">Dispositivo</label>
+            <select id="aiTrainDevice" title="Seleccionar cámara cv2" class="nav-select" style="margin-right:8px"></select>
             <button id="btnAiTrainStart" class="nav-btn" type="button">Iniciar cámara</button>
             <button id="btnAiTrainStop" class="nav-btn" type="button" hidden>Detener cámara</button>
             <button id="btnAiTrainCapture" class="nav-btn" type="button" disabled>Capturar (30s)</button>
@@ -151,9 +160,11 @@
             <h2 class="camera-title">Cargar Excel de Válvulas</h2>
           </div>
           <div class="camera-body">
-            <p class="subtitle">Formato requerido: columnas Valvula, Cantidad, Ubicación, # de serie, Ficha tecnica, Simbolo</p>
+            <p class="subtitle">Formato requerido: columnas Valvula, Cantidad, Ubicación, # de serie, Ficha tecnica,
+              Simbolo</p>
             <input id="excelFile" type="file" accept=".xlsx" />
-            <button id="btnUploadExcel" class="nav-btn" type="button" style="margin-top:10px">Subir y actualizar</button>
+            <button id="btnUploadExcel" class="nav-btn" type="button" style="margin-top:10px">Subir y
+              actualizar</button>
             <div id="uploadResult" class="subtitle" style="margin-top:8px"></div>
           </div>
         </section>
