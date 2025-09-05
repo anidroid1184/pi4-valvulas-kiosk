@@ -5,3 +5,10 @@ descartado/
 logs/
 console_logs/
 .windsurf
+app/__pycache__
+web/__pycache__
+scripts/__pycache__
+app/services/__pycache__
+data/images/
+data/images/index.json
+

@@ -88,7 +88,7 @@
           </div>
           <div class="camera-body">
             <div class="camera-wrap">
-              <img id="aiMJPEG" alt="AI stream" />
+              <video id="aiVideo" autoplay playsinline muted></video>
               <div class="overlay-guide" aria-hidden="true">
                 <div class="frame center-box"></div>
                 <div class="guide-text" id="aiGuideText">Alinea la válvula dentro del marco. Acércate o aléjate hasta
@@ -98,8 +98,6 @@
             <canvas id="aiCanvas" hidden></canvas>
           </div>
           <div class="camera-footer">
-            <label for="aiDevice" class="sr-only">Dispositivo</label>
-            <select id="aiDevice" title="Seleccionar cámara cv2" class="nav-select" style="margin-right:8px"></select>
             <button id="btnAIStart" class="nav-btn" type="button">Iniciar cámara</button>
             <button id="btnAIStop" class="nav-btn" type="button" hidden>Detener cámara</button>
             <button id="btnAICapture" class="nav-btn" type="button" disabled>Capturar y reconocer</button>
@@ -123,7 +121,7 @@
             <div id="aiTrainResults" class="grid" role="list" aria-label="Resultados de búsqueda"></div>
             <div class="camera-wrap" style="margin-top:12px">
               <video id="aiTrainVideo" autoplay playsinline muted hidden></video>
-              <img id="aiTrainMJPEG" alt="AI Train stream" />
+              <img id="aiTrainMJPEG" alt="AI Train stream" hidden />
               <!-- Overlay guía para AI Train (rectángulo 4:3 centrado) -->
               <div class="overlay-guide" aria-hidden="true">
                 <div class="frame rect-4x3" role="img" aria-label="Marco de encuadre 4:3"></div>
@@ -144,8 +142,6 @@
             </div>
           </div>
           <div class="camera-footer">
-            <label for="aiTrainDevice" class="sr-only">Dispositivo</label>
-            <select id="aiTrainDevice" title="Seleccionar cámara cv2" class="nav-select" style="margin-right:8px"></select>
             <button id="btnAiTrainStart" class="nav-btn" type="button">Iniciar cámara</button>
             <button id="btnAiTrainStop" class="nav-btn" type="button" hidden>Detener cámara</button>
             <button id="btnAiTrainCapture" class="nav-btn" type="button" disabled>Capturar (30s)</button>
