@@ -311,7 +311,28 @@
 
     input.addEventListener('input', () => debounce(() => apply(input.value)));
     input.addEventListener('keydown', (e) => { if (e.key === 'Escape') { input.value = ''; apply(''); input.blur(); } });
-    if (btnClear) { btnClear.addEventListener('click', () => { input.value = ''; apply(''); input.focus(); }); }
+    if (btnClear) {
+      btnClear.addEventListener('click', () => {
+        // Limpiar búsqueda de texto
+        input.value = '';
+        apply('');
+        // Limpiar filtros de banco si existen
+        try {
+          if (window.Filters && typeof window.Filters.clear === 'function') {
+            window.Filters.clear();
+          } else {
+            // Fallback local si no existe Filters global
+            if (activeBanks && typeof activeBanks.clear === 'function') {
+              activeBanks.clear();
+            }
+          }
+        } catch (_) { /* noop */ }
+        // Re-renderizar chips visuales
+        try { renderBankFilters(); } catch (_) { }
+        // Foco de vuelta al input para mejor UX
+        input.focus();
+      });
+    }
 
     // Primera carga sin filtro
     apply('');
@@ -431,10 +452,19 @@
     try { console.debug('[RENDER] items in =', Array.isArray(valvulas) ? valvulas.length : 0, 'filtered =', filtered.length); } catch (_) { }
 
     if (!filtered || !filtered.length) {
-      // Mensaje discreto dentro del grid
+      // Mensaje discreto dentro del grid, con pista según filtros de banco/ubicación
       const empty = document.createElement('div');
       empty.className = 'empty';
-      empty.textContent = 'Sin resultados';
+      let msg = 'Sin resultados';
+      try {
+        const hasBankFilters = (window.Filters && typeof window.Filters.getActiveBanks === 'function')
+          ? (window.Filters.getActiveBanks().size > 0)
+          : (activeBanks && activeBanks.size > 0);
+        if (hasBankFilters) {
+          msg = 'Sin resultados para los bancos seleccionados. Verifica las ubicaciones.';
+        }
+      } catch (_) { /* noop */ }
+      empty.textContent = msg;
       grid.appendChild(empty);
       return;
     }
@@ -835,26 +865,74 @@
   }
 
   async function initApp() {
+
     setStatus('Cargando…');
 
-    const [meta, images] = await Promise.all([
+    const [meta, images, valves] = await Promise.all([
       loadMetadata(),
-      discoverImagesFromFolder()
+      discoverImagesFromFolder(),
+      fetchValvesFromBackend()
     ]);
 
+
     let catalog = [];
-    // Prioridad: si hay imágenes desde card-photos, usarlas SIEMPRE
+    // Construir catálogo combinando portadas (images) con metadatos reales de BD (valves)
+    // Reglas:
+    //  - Si hay images, se usan como base para portadas.
+    //  - Si hay valves del backend, se fusionan campos (ubicacion, cantidad, etc.).
+    //  - Si no hay images pero hay valves, se usa valves con simbolo como imagen si existe.
+    //  - Meta local solo como último recurso.
+
+    const mapValves = new Map();
+    if (Array.isArray(valves)) {
+      for (const v of valves) {
+        // Indexar por múltiples llaves para asegurar merge correcto con portadas
+        const keys = new Set();
+        keys.add(String(v.id));
+        if (v.valvula) keys.add(String(v.valvula));
+        if (v.numero_serie) keys.add(String(v.numero_serie));
+        if (v.ref) keys.add(String(v.ref));
+        for (const k of keys) { mapValves.set(k, v); }
+      }
+    }
+
     if (Array.isArray(images) && images.length) {
-      catalog = images;
-    } else if (state.imagesIndex) {
-      // (No aplicará en modo FORCE_LEGACY_STATIC=true, pero mantenemos por compatibilidad)
-      catalog = Array.isArray(images) ? images : buildFallbackValveData(images || []);
+      // Fusionar por id/ref
+      const merged = images.map(it => {
+        const key = String(it.ref || it.id || '').trim();
+        const metaV = mapValves.get(key);
+        if (metaV) {
+          // Combinar, priorizando portada de images y enriqueciendo con ubicacion desde BD
+          return {
+            ...it,
+            ...metaV,
+            id: key,
+            ref: key,
+            imagen: it.imagen || metaV.simbolo || it.imagen,
+            nombre: metaV.valvula || metaV.nombre || it.nombre || key
+          };
+        }
+        return it;
+      });
+      catalog = merged;
+    } else if (Array.isArray(valves) && valves.length) {
+      // No hay images: usar valves del backend
+      catalog = valves.map(v => {
+        // Elegir una referencia visible estable: numero_serie o valvula, en su defecto id
+        const refKey = String(v.numero_serie || v.valvula || v.id);
+        return {
+          ...v,
+          id: refKey,
+          ref: refKey,
+          imagen: v.simbolo || v.imagen || ''
+        };
+      });
     } else if (meta && meta.length) {
-      // Solo si no hay imágenes, usa la metadata demo
       catalog = meta;
     } else {
       catalog = buildFallbackValveData(images || []);
     }
+
 
     state.valvulas = catalog;
     try { console.debug('[INIT] catalog size =', catalog.length); } catch (_) { }
