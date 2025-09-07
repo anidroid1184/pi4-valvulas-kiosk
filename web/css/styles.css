@@ -72,6 +72,9 @@
   --tint-700: rgba(11,59,91,.16);   /* de --c-700 */
   --tint-900: rgba(15,23,42,.12);   /* de --c-900 */
 
+  /* Altura combinada del header + navbar pegajosos */
+  --sticky-offset: 140px;
+
   /* Bank tokens (A amarillo, B azul, C rojo, D verde) */
   --bankA:#F59E0B; --bankA-bg:#FEF3C7; --bankA-dark:#92400E;
   --bankB:#2563EB; --bankB-bg:#DBEAFE; --bankB-dark:#1E3A8A;
@@ -168,8 +171,8 @@ body{
   background:#fff; 
   border-right:1px solid var(--border); 
   position:sticky; 
-  top:72px; /* align below sticky header height */
-  height:100vh; 
+  top:var(--sticky-offset);
+  height:calc(100vh - var(--sticky-offset));
   overflow:auto; 
   width:var(--sidebar-w, 320px); 
   min-width:var(--sidebar-w, 320px); 
@@ -239,7 +242,7 @@ body{
     position:relative; /* needed for hint pseudo-elements */
   }
   .content{ min-width: 640px; } /* asegurar un ancho útil para el contenido */
-  .sidebar{ position:sticky; top:72px; height:calc(100vh - 72px); max-height:calc(100vh - 72px); }
+  .sidebar{ position:sticky; top:var(--sticky-offset); height:calc(100vh - var(--sticky-offset)); max-height:calc(100vh - var(--sticky-offset)); }
 
   /* Horizontal scroll hints */
   .layout::before,
