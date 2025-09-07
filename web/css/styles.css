@@ -284,6 +284,40 @@ body{
 .card .title{margin-top:8px;font-size:.95rem;color:var(--text)}
 .card .subtitle{margin:2px 0 0;font-size:.8rem;color:var(--muted)}
 
+/* Horizontal cards for Images panel */
+#imagesPanel .grid{ grid-template-columns: 1fr; }
+.card--h{
+  flex-direction:row;
+  align-items:stretch;
+  gap:12px;
+  padding:12px;
+}
+.card--h .card__media{
+  /* responsive image block: grows with viewport but stays within bounds */
+  flex:0 0 clamp(260px, 26vw, 380px);
+  height:clamp(220px, 34vw, 420px);
+  border-radius:10px;
+  overflow:hidden;
+  background:#ffffff; /* white background to hide letterboxing */
+  display:flex;
+  align-items:center; /* center image vertically */
+  justify-content:center; /* center image horizontally */
+}
+.card--h .card__media img{
+  width:100%; height:100%; object-fit:contain; border-radius:10px; transform:none !important; background:#ffffff;
+}
+.card--h .card__content{
+  flex:1 1 auto;
+  display:flex; flex-direction:column; justify-content:center;
+}
+.card--h .title{ margin:0 0 6px; font-size:1.1rem; font-weight:700; color:var(--c-700); }
+.card__meta{ display:grid; gap:6px; }
+.card__meta .meta-row{ display:flex; gap:8px; align-items:baseline; }
+.card__meta .meta-label{ min-width:96px; font-weight:700; color:var(--muted); }
+.card__meta .meta-val{ color:var(--text); }
+.card__meta .meta-val a{ color:var(--c-700); text-decoration:none; }
+.card__meta .meta-val a:hover{ text-decoration:underline; }
+
 /* AI Train: hover/selected visual para cards de resultados */
 #aiTrainResults .card{ border-color: var(--border); }
 #aiTrainResults .card:hover{ 

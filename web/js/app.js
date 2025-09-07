@@ -476,31 +476,69 @@
       state.map.set(v.id, v);
 
       const card = document.createElement('div');
-      card.className = 'card';
+      // Horizontal card layout
+      card.className = 'card card--h';
       card.setAttribute('role', 'button');
       card.setAttribute('tabindex', '0');
       card.setAttribute('aria-label', `Abrir detalles de ${sanitize(v.nombre)}`);
       card.dataset.id = v.id;
       if (v.ref) { card.dataset.ref = v.ref; }
 
+      // Left: image wrapper
+      const media = document.createElement('div');
+      media.className = 'card__media';
       const img = document.createElement('img');
       // Carga ansiosa de portadas, pero forzamos recarga si la imagen cambia
       img.loading = 'eager';
       img.src = v.imagen + '?t=' + Date.now(); // Forzar recarga si se reemplazó la imagen
       img.alt = `${sanitize(v.nombre)} (${v.id})`;
-      img.addEventListener('error', () => {
-        img.replaceWith(placeholderImage());
-      }, { passive: true });
+      img.addEventListener('error', () => { img.replaceWith(placeholderImage()); }, { passive: true });
+      media.appendChild(img);
+
+      // Right: content/info
+      const content = document.createElement('div');
+      content.className = 'card__content';
 
       const title = document.createElement('div');
       title.className = 'title';
       title.textContent = v.nombre;
 
-      const subtitle = document.createElement('div');
-      subtitle.className = 'subtitle';
-      subtitle.textContent = 'Toca para ver detalles';
+      const meta = document.createElement('div');
+      meta.className = 'card__meta';
 
-      card.append(img, title, subtitle);
+      // Meta rows: Uso (placeholder), Ubicación, Datasheet
+      const row1 = document.createElement('div');
+      row1.className = 'meta-row';
+      const usageLabel = document.createElement('span'); usageLabel.className = 'meta-label'; usageLabel.textContent = 'Uso';
+      const usageVal = document.createElement('span'); usageVal.className = 'meta-val'; usageVal.textContent = '—';
+      row1.append(usageLabel, usageVal);
+
+      const row2 = document.createElement('div');
+      row2.className = 'meta-row';
+      const locLabel = document.createElement('span'); locLabel.className = 'meta-label'; locLabel.textContent = 'Ubicación';
+      const locVal = document.createElement('span'); locVal.className = 'meta-val'; locVal.textContent = String(v.ubicacion || '—');
+      row2.append(locLabel, locVal);
+
+      const row3 = document.createElement('div');
+      row3.className = 'meta-row';
+      const dsLabel = document.createElement('span'); dsLabel.className = 'meta-label'; dsLabel.textContent = 'Ficha técnica';
+      const dsVal = document.createElement('span'); dsVal.className = 'meta-val';
+      if (v.ficha_tecnica && /^https?:\/\//i.test(String(v.ficha_tecnica))) {
+        const a = document.createElement('a');
+        a.href = String(v.ficha_tecnica);
+        a.target = '_blank'; a.rel = 'noopener noreferrer';
+        a.textContent = 'Ver PDF';
+        dsVal.appendChild(a);
+      } else {
+        dsVal.textContent = '—';
+      }
+      row3.append(dsLabel, dsVal);
+
+      meta.append(row1, row2, row3);
+
+      content.append(title, meta);
+
+      card.append(media, content);
       // Al seleccionar una card: fija la referencia para entrenamiento y abre el detalle
       addActivationHandlers(card, () => {
         try {
