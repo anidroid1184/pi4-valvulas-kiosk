@@ -508,18 +508,18 @@
 
       // helper para icono pequeño reutilizando sprite
       const ICON_SPRITE_SM = 'STATIC/IMG/icons.svg';
-      function iconSm(id){
-        try{
+      function iconSm(id) {
+        try {
           const svgNS = 'http://www.w3.org/2000/svg';
           const xlinkNS = 'http://www.w3.org/1999/xlink';
           const svg = document.createElementNS(svgNS, 'svg');
           svg.setAttribute('class', 'icon');
           const use = document.createElementNS(svgNS, 'use');
           use.setAttribute('href', `${ICON_SPRITE_SM}#${id}`);
-          try{ use.setAttributeNS(xlinkNS, 'href', `${ICON_SPRITE_SM}#${id}`);}catch(_){}
+          try { use.setAttributeNS(xlinkNS, 'href', `${ICON_SPRITE_SM}#${id}`); } catch (_) { }
           svg.appendChild(use);
           return svg;
-        }catch(_){ return null; }
+        } catch (_) { return null; }
       }
 
       // Sección 1: Cantidad
@@ -549,10 +549,10 @@
         chip.className = 'chip';
         const s = String(p).toUpperCase();
         const first = s.charAt(0);
-        if (first === 'A' || /BANC?O\s*A\b/.test(s) || /\bBANK\s*A\b/.test(s)) chip.classList.add('chip--bank','chip--bankA');
-        else if (first === 'B' || /BANC?O\s*B\b/.test(s) || /\bBANK\s*B\b/.test(s)) chip.classList.add('chip--bank','chip--bankB');
-        else if (first === 'C' || /BANC?O\s*C\b/.test(s) || /\bBANK\s*C\b/.test(s)) chip.classList.add('chip--bank','chip--bankC');
-        else if (first === 'D' || /BANC?O\s*D\b/.test(s) || /\bBANK\s*D\b/.test(s)) chip.classList.add('chip--bank','chip--bankD');
+        if (first === 'A' || /BANC?O\s*A\b/.test(s) || /\bBANK\s*A\b/.test(s)) chip.classList.add('chip--bank', 'chip--bankA');
+        else if (first === 'B' || /BANC?O\s*B\b/.test(s) || /\bBANK\s*B\b/.test(s)) chip.classList.add('chip--bank', 'chip--bankB');
+        else if (first === 'C' || /BANC?O\s*C\b/.test(s) || /\bBANK\s*C\b/.test(s)) chip.classList.add('chip--bank', 'chip--bankC');
+        else if (first === 'D' || /BANC?O\s*D\b/.test(s) || /\bBANK\s*D\b/.test(s)) chip.classList.add('chip--bank', 'chip--bankD');
         chip.textContent = p;
         chipsWrap.appendChild(chip);
       }
@@ -829,51 +829,7 @@
     kv2.append(dt2, dd2);
     secGuide.append(secGuideH, kv2);
 
-    // 3) Ficha: mini especificación (Cantidad, Ubicación, # de serie)
-    const secFicha = document.createElement('section');
-    secFicha.className = 'valve-section';
-    const secFichaH = document.createElement('h3'); secFichaH.textContent = 'Ficha';
-    const icList = icon('icon-list'); if (icList) secFichaH.prepend(icList);
-    const kv3 = document.createElement('dl'); kv3.className = 'kv';
-    const addKV = (label, value) => {
-      if (value == null || value === '') return;
-      const dtx = document.createElement('dt'); dtx.textContent = label;
-      const ddx = document.createElement('dd'); ddx.textContent = String(value);
-      kv3.append(dtx, ddx);
-    };
-    addKV('Cantidad', data.cantidad);
-    // Ubicaciones como chips (si hay múltiples separadas por coma o /)
-    if (data.ubicacion) {
-      const dtu = document.createElement('dt'); dtu.textContent = 'Ubicación';
-      const ddu = document.createElement('dd');
-      const chipsWrap = document.createElement('div');
-      chipsWrap.style.display = 'flex';
-      chipsWrap.style.flexWrap = 'wrap';
-      chipsWrap.style.gap = '6px';
-      const parts = String(data.ubicacion).split(/[\/,|;]+/).map(s => s.trim()).filter(Boolean);
-      if (parts.length === 0) { parts.push(String(data.ubicacion)); }
-      for (const p of parts) {
-        const chip = document.createElement('span');
-        chip.className = 'chip';
-        const first = String(p).trim().charAt(0).toUpperCase();
-        if (first === 'A' || first === 'B' || first === 'C' || first === 'D') {
-          chip.classList.add('chip--bank', 'chip--bank' + first);
-        } else {
-          // fallback: intentar detectar "Banco X" en el texto
-          const s = String(p).toUpperCase();
-          if (/BANC?O\s*A\b/.test(s)) chip.classList.add('chip--bank', 'chip--bankA');
-          else if (/BANC?O\s*B\b/.test(s)) chip.classList.add('chip--bank', 'chip--bankB');
-          else if (/BANC?O\s*C\b/.test(s)) chip.classList.add('chip--bank', 'chip--bankC');
-          else if (/BANC?O\s*D\b/.test(s)) chip.classList.add('chip--bank', 'chip--bankD');
-        }
-        chip.textContent = p;
-        chipsWrap.appendChild(chip);
-      }
-      ddu.appendChild(chipsWrap);
-      kv3.append(dtu, ddu);
-    }
-    addKV('# de serie', data.numero_serie || data.serie);
-    secFicha.append(secFichaH, kv3);
+    // (Sección "Ficha" eliminada a petición del usuario)
 
     // 4) Símbolo (imagen si existe)
     if (data.simbolo) {
@@ -916,7 +872,6 @@
     }
 
     // Añadir secciones en orden definido
-    wrap.prepend(secFicha); // ya contiene ubicaciones y cantidad
     wrap.prepend(secGuide);
     wrap.prepend(secValve);
 
