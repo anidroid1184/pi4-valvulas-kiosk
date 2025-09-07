@@ -38,6 +38,50 @@
           } else {
             activeBanks.add(bank);
           }
+
+          // --- Símbolos ---
+          async function loadSymbolsIndexOnce() {
+            if (state.symbolsIndex !== null) return state.symbolsIndex;
+            try {
+              const res = await fetch('STATIC/IMG/simbology/index.json', { cache: 'no-store' });
+              if (res.ok) {
+                const data = await res.json();
+                if (Array.isArray(data)) {
+                  state.symbolsIndex = data; return data;
+                }
+                if (data && Array.isArray(data.files)) {
+                  state.symbolsIndex = data.files; return data.files;
+                }
+              }
+            } catch (_) { /* no index available */ }
+            state.symbolsIndex = undefined; // mark tried
+            return undefined;
+          }
+
+          async function findSymbolsForRef(ref) {
+            const results = [];
+            const cleanRef = String(ref || '').trim();
+            if (!cleanRef) return results;
+            const idx = await loadSymbolsIndexOnce();
+            const base = 'STATIC/IMG/simbology/';
+            if (Array.isArray(idx)) {
+              const rx = new RegExp(cleanRef.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+              for (const name of idx) {
+                if (typeof name === 'string' && rx.test(name)) {
+                  results.push(base + name);
+                }
+              }
+              return results;
+            }
+            // Fallback: try common filename patterns directly (will load lazily in <img>)
+            const exts = ['png', 'jpg', 'jpeg', 'webp', 'svg'];
+            for (const ext of exts) {
+              results.push(base + cleanRef + '.' + ext);
+              results.push(base + cleanRef.toUpperCase() + '.' + ext);
+              results.push(base + cleanRef.toLowerCase() + '.' + ext);
+            }
+            return results;
+          }
           renderBankFilters();
           renderMenu(filterValvulasByBank(state.valvulas));
         }
@@ -72,7 +116,8 @@
     valvulas: [],
     map: new Map(),
     lastActivator: null,
-    imagesIndex: null // { ref: [files...] }
+    imagesIndex: null, // { ref: [files...] }
+    symbolsIndex: null // [ filenames ] from STATIC/IMG/simbology/index.json
   };
 
   // Precalentamiento
@@ -249,29 +294,6 @@
     const aiTrainPanel = document.getElementById('aiTrainPanel');
     const uploadPanel = document.getElementById('uploadPanel');
 
-    // Create/update an indicator bar under the active tab
-    const navContainer = document.getElementById('navItems');
-    let indicator = null;
-    if (navContainer) {
-      indicator = navContainer.querySelector('.nav-indicator');
-      if (!indicator) {
-        indicator = document.createElement('div');
-        indicator.className = 'nav-indicator';
-        navContainer.appendChild(indicator);
-      }
-    }
-
-    function moveIndicator(targetEl) {
-      try {
-        if (!indicator || !navContainer || !targetEl) return;
-        const btn = targetEl;
-        const width = Math.max(40, Math.round(btn.offsetWidth * 0.6));
-        const left = Math.round(btn.offsetLeft + (btn.offsetWidth - width) / 2);
-        indicator.style.width = width + 'px';
-        indicator.style.transform = `translateX(${left}px)`;
-      } catch (_) { /* noop */ }
-    }
-
     function setActive(tab) {
       for (const el of [tabImages, tabQR, tabAIRecognize, tabAITrain, tabUpload]) {
         if (!el) continue;
@@ -280,8 +302,6 @@
         if (active) { el.setAttribute('aria-current', 'page'); }
         else { el.removeAttribute('aria-current'); }
       }
-      // align indicator under the active tab
-      moveIndicator(tab);
     }
 
     // Navegación centralizada vía Router
@@ -299,14 +319,6 @@
     // Estado inicial: activar tab y navegar
     if (tabImages) { setActive(tabImages); }
     try { window.Router && window.Router.navigate('images'); } catch (_) { }
-
-    // keep indicator aligned on resize
-    try {
-      window.addEventListener('resize', () => {
-        const current = document.querySelector('.nav-btn.active');
-        if (current) moveIndicator(current);
-      });
-    } catch (_) { /* noop */ }
   }
 
   function setStatus(msg) {
@@ -885,21 +897,47 @@
 
     // (Sección "Ficha" eliminada a petición del usuario)
 
-    // 4) Símbolo (imagen si existe)
-    if (data.simbolo) {
+    // 4) Símbolo(s)
+    {
       const secSymbol = document.createElement('section');
       secSymbol.className = 'valve-section';
       const secSymbolH = document.createElement('h3'); secSymbolH.textContent = 'Símbolo';
       const icSym = icon('icon-symbol'); if (icSym) secSymbolH.prepend(icSym);
-      const img = document.createElement('img');
-      img.className = 'valve-card__symbol';
-      img.src = data.simbolo;
-      img.alt = `${sanitize(data.nombre || data.id)} - símbolo`;
-      img.loading = 'lazy';
-      img.decoding = 'async';
-      img.addEventListener('error', () => { img.replaceWith(placeholderImage()); }, { passive: true });
-      secSymbol.append(secSymbolH, img);
-      wrap.appendChild(secSymbol);
+      const body = document.createElement('div');
+      // fallback simple si la válvula trae una URL directa
+      if (data.simbolo) {
+        const img = document.createElement('img');
+        img.className = 'valve-card__symbol';
+        img.src = data.simbolo;
+        img.alt = `${sanitize(data.nombre || data.id)} - símbolo`;
+        img.loading = 'lazy'; img.decoding = 'async';
+        img.addEventListener('error', () => { img.replaceWith(placeholderImage()); }, { passive: true });
+        body.appendChild(img);
+      }
+      // búsqueda por referencia en carpeta estática de simbología
+      const ref = data.ref || data.id || '';
+      if (ref) {
+        const grid = document.createElement('div');
+        grid.className = 'symbol-grid';
+        body.appendChild(grid);
+        // async load
+        findSymbolsForRef(ref).then(urls => {
+          const seen = new Set();
+          for (const u of urls) {
+            if (!u || seen.has(u)) continue; seen.add(u);
+            const img = document.createElement('img');
+            img.loading = 'lazy'; img.decoding = 'async';
+            img.alt = `${sanitize(ref)} símbolo`;
+            img.src = u;
+            img.addEventListener('error', () => { img.remove(); }, { passive: true });
+            grid.appendChild(img);
+          }
+        }).catch(() => { });
+      }
+      if (body.childNodes.length > 0) {
+        secSymbol.append(secSymbolH, body);
+        wrap.appendChild(secSymbol);
+      }
     }
 
     // 5) Ficha técnica (enlace si es URL)
