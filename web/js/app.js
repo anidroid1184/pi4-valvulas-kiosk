@@ -506,35 +506,68 @@
       const meta = document.createElement('div');
       meta.className = 'card__meta';
 
-      // Meta rows: Uso (placeholder), Ubicación, Datasheet
-      const row1 = document.createElement('div');
-      row1.className = 'meta-row';
-      const usageLabel = document.createElement('span'); usageLabel.className = 'meta-label'; usageLabel.textContent = 'Uso';
-      const usageVal = document.createElement('span'); usageVal.className = 'meta-val'; usageVal.textContent = '—';
-      row1.append(usageLabel, usageVal);
-
-      const row2 = document.createElement('div');
-      row2.className = 'meta-row';
-      const locLabel = document.createElement('span'); locLabel.className = 'meta-label'; locLabel.textContent = 'Ubicación';
-      const locVal = document.createElement('span'); locVal.className = 'meta-val'; locVal.textContent = String(v.ubicacion || '—');
-      row2.append(locLabel, locVal);
-
-      const row3 = document.createElement('div');
-      row3.className = 'meta-row';
-      const dsLabel = document.createElement('span'); dsLabel.className = 'meta-label'; dsLabel.textContent = 'Ficha técnica';
-      const dsVal = document.createElement('span'); dsVal.className = 'meta-val';
-      if (v.ficha_tecnica && /^https?:\/\//i.test(String(v.ficha_tecnica))) {
-        const a = document.createElement('a');
-        a.href = String(v.ficha_tecnica);
-        a.target = '_blank'; a.rel = 'noopener noreferrer';
-        a.textContent = 'Ver PDF';
-        dsVal.appendChild(a);
-      } else {
-        dsVal.textContent = '—';
+      // helper para icono pequeño reutilizando sprite
+      const ICON_SPRITE_SM = 'STATIC/IMG/icons.svg';
+      function iconSm(id){
+        try{
+          const svgNS = 'http://www.w3.org/2000/svg';
+          const xlinkNS = 'http://www.w3.org/1999/xlink';
+          const svg = document.createElementNS(svgNS, 'svg');
+          svg.setAttribute('class', 'icon');
+          const use = document.createElementNS(svgNS, 'use');
+          use.setAttribute('href', `${ICON_SPRITE_SM}#${id}`);
+          try{ use.setAttributeNS(xlinkNS, 'href', `${ICON_SPRITE_SM}#${id}`);}catch(_){}
+          svg.appendChild(use);
+          return svg;
+        }catch(_){ return null; }
       }
-      row3.append(dsLabel, dsVal);
 
-      meta.append(row1, row2, row3);
+      // Sección 1: Cantidad
+      const secQty = document.createElement('section');
+      secQty.className = 'meta-section';
+      const hQty = document.createElement('h4'); hQty.className = 'meta-title'; hQty.textContent = 'Cantidad';
+      const iQty = iconSm('icon-list'); if (iQty) hQty.prepend(iQty);
+      const qtyVal = document.createElement('div'); qtyVal.className = 'meta-val'; qtyVal.textContent = (v.cantidad != null && v.cantidad !== '') ? String(v.cantidad) : '—';
+      secQty.append(hQty, qtyVal);
+
+      // Sección 2: Ubicación (chips)
+      const secLoc = document.createElement('section');
+      secLoc.className = 'meta-section';
+      const hLoc = document.createElement('h4'); hLoc.className = 'meta-title'; hLoc.textContent = 'Ubicación';
+      const iLoc = iconSm('icon-guide'); if (iLoc) hLoc.prepend(iLoc);
+      const locVal = document.createElement('div'); locVal.className = 'meta-val';
+      // Render ubicación como chips coloreados, igual que en el sidebar
+      const chipsWrap = document.createElement('div');
+      chipsWrap.style.display = 'flex';
+      chipsWrap.style.flexWrap = 'wrap';
+      chipsWrap.style.gap = '6px';
+      const parts = v.ubicacion ? String(v.ubicacion).split(/[\/|;,]+/).map(s => s.trim()).filter(Boolean) : [];
+      if (parts.length === 0 && v.ubicacion) { parts.push(String(v.ubicacion)); }
+      if (parts.length === 0) { chipsWrap.textContent = '—'; }
+      for (const p of parts) {
+        const chip = document.createElement('span');
+        chip.className = 'chip';
+        const s = String(p).toUpperCase();
+        const first = s.charAt(0);
+        if (first === 'A' || /BANC?O\s*A\b/.test(s) || /\bBANK\s*A\b/.test(s)) chip.classList.add('chip--bank','chip--bankA');
+        else if (first === 'B' || /BANC?O\s*B\b/.test(s) || /\bBANK\s*B\b/.test(s)) chip.classList.add('chip--bank','chip--bankB');
+        else if (first === 'C' || /BANC?O\s*C\b/.test(s) || /\bBANK\s*C\b/.test(s)) chip.classList.add('chip--bank','chip--bankC');
+        else if (first === 'D' || /BANC?O\s*D\b/.test(s) || /\bBANK\s*D\b/.test(s)) chip.classList.add('chip--bank','chip--bankD');
+        chip.textContent = p;
+        chipsWrap.appendChild(chip);
+      }
+      locVal.appendChild(chipsWrap);
+      secLoc.append(hLoc, locVal);
+
+      // Sección 3: Número de serie
+      const secSN = document.createElement('section');
+      secSN.className = 'meta-section';
+      const hSN = document.createElement('h4'); hSN.className = 'meta-title'; hSN.textContent = 'Número de serie';
+      const iSN = iconSm('icon-file'); if (iSN) hSN.prepend(iSN);
+      const snVal = document.createElement('div'); snVal.className = 'meta-val'; snVal.textContent = String(v.numero_serie || v.serie || '—');
+      secSN.append(hSN, snVal);
+
+      meta.append(secQty, secLoc, secSN);
 
       content.append(title, meta);
 

@@ -311,12 +311,19 @@ body{
   display:flex; flex-direction:column; justify-content:center;
 }
 .card--h .title{ margin:0 0 6px; font-size:1.1rem; font-weight:700; color:var(--c-700); }
-.card__meta{ display:grid; gap:6px; }
+.card__meta{ display:grid; gap:10px; }
+/* legacy row styles (kept if used elsewhere) */
 .card__meta .meta-row{ display:flex; gap:8px; align-items:baseline; }
 .card__meta .meta-label{ min-width:96px; font-weight:700; color:var(--muted); }
 .card__meta .meta-val{ color:var(--text); }
 .card__meta .meta-val a{ color:var(--c-700); text-decoration:none; }
 .card__meta .meta-val a:hover{ text-decoration:underline; }
+/* new sectioned meta blocks */
+.card__meta .meta-section{ border:1px solid var(--border); border-radius:10px; padding:10px; background:#fff; }
+.card__meta .meta-title{ margin:0 0 6px; display:flex; align-items:center; gap:8px; font-size:.95rem; color:var(--c-700); background:var(--tint-300); padding:6px 8px; border-radius:8px; }
+.card__meta .meta-title .icon{ width:18px; height:18px; color:var(--c-700); }
+/* compact chips inside cards */
+.card__meta .chip{ padding:6px 10px; font-size:.9rem; }
 
 /* AI Train: hover/selected visual para cards de resultados */
 #aiTrainResults .card{ border-color: var(--border); }
