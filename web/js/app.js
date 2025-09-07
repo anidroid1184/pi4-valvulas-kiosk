@@ -608,6 +608,27 @@
         });
       }
     } catch (_) { /* noop */ }
+
+    // Configurar pista de desplazamiento horizontal para .layout en móviles
+    try {
+      const layout = document.querySelector('.layout');
+      if (layout) {
+        const updateHints = () => {
+          const max = layout.scrollWidth - layout.clientWidth;
+          if (max > 2) {
+            layout.classList.toggle('has-left', layout.scrollLeft > 2);
+            layout.classList.toggle('has-right', layout.scrollLeft < max - 2);
+          } else {
+            layout.classList.remove('has-left');
+            layout.classList.remove('has-right');
+          }
+        };
+        layout.addEventListener('scroll', updateHints, { passive: true });
+        window.addEventListener('resize', updateHints);
+        // primer cálculo
+        updateHints();
+      }
+    } catch (_) { /* noop */ }
   });
 
   function placeholderImage() {
@@ -885,6 +906,12 @@
         const el = document.getElementById('sidebar');
         if (el && typeof el.scrollIntoView === 'function') {
           el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        // Asegurar que el panel comience desde arriba
+        if (el && typeof el.scrollTo === 'function') {
+          el.scrollTo({ top: 0, behavior: 'auto' });
+        } else if (el) {
+          el.scrollTop = 0;
         }
       }
     } catch (_) { }

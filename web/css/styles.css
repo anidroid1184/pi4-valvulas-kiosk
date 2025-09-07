@@ -162,13 +162,13 @@ body{
 .status{min-height:1.25rem;color:var(--muted);margin:6px auto 10px;text-align:center;font-size:.9rem}
 
 /* App layout with persistent sidebar */
-.layout{ display:grid; grid-template-columns: var(--sidebar-w, 320px) 1fr; gap:16px; align-items:start; }
+.layout{ display:grid; grid-template-columns: var(--sidebar-w, 320px) 1fr; gap:16px; align-items:start; overflow-x:visible; }
 .content{ min-width:0 }
 .sidebar{
   background:#fff; 
   border-right:1px solid var(--border); 
   position:sticky; 
-  top:0; 
+  top:72px; /* align below sticky header height */
   height:100vh; 
   overflow:auto; 
   width:var(--sidebar-w, 320px); 
@@ -230,9 +230,25 @@ body{
 .details a{ color:var(--c-500); text-decoration:none; word-break:break-all; }
 .details a:hover{ text-decoration:underline; }
 
+/* Responsive: en pantallas estrechas, NO apilar el sidebar; permitir desplazamiento horizontal */
 @media (max-width: 1023px){
-  .layout{ grid-template-columns: 1fr; }
-  .sidebar{ order: -1; position:relative; top:auto; max-height:none; }
+  .layout{
+    grid-template-columns: var(--sidebar-w, 320px) 1fr; /* mantener dos columnas */
+    overflow-x:auto; /* permitir desplazamiento horizontal para acceder al sidebar */
+    -webkit-overflow-scrolling: touch;
+    position:relative; /* needed for hint pseudo-elements */
+  }
+  .content{ min-width: 640px; } /* asegurar un ancho útil para el contenido */
+  .sidebar{ position:sticky; top:72px; height:calc(100vh - 72px); max-height:calc(100vh - 72px); }
+
+  /* Horizontal scroll hints */
+  .layout::before,
+  .layout::after{
+    content:""; position:sticky; top:0; bottom:0; width:20px; z-index:30; pointer-events:none;
+    display:block; height:100%;
+  }
+  .layout.has-left::before{ left:0; background:linear-gradient(90deg, rgba(2,6,23,.22), rgba(2,6,23,0)); border-radius:0 8px 8px 0; }
+  .layout.has-right::after{ right:0; background:linear-gradient(270deg, rgba(2,6,23,.22), rgba(2,6,23,0)); border-radius:8px 0 0 8px; }
 }
 
 /* Search bar */
