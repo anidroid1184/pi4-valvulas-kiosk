@@ -249,6 +249,29 @@
     const aiTrainPanel = document.getElementById('aiTrainPanel');
     const uploadPanel = document.getElementById('uploadPanel');
 
+    // Create/update an indicator bar under the active tab
+    const navContainer = document.getElementById('navItems');
+    let indicator = null;
+    if (navContainer) {
+      indicator = navContainer.querySelector('.nav-indicator');
+      if (!indicator) {
+        indicator = document.createElement('div');
+        indicator.className = 'nav-indicator';
+        navContainer.appendChild(indicator);
+      }
+    }
+
+    function moveIndicator(targetEl) {
+      try {
+        if (!indicator || !navContainer || !targetEl) return;
+        const btn = targetEl;
+        const width = Math.max(40, Math.round(btn.offsetWidth * 0.6));
+        const left = Math.round(btn.offsetLeft + (btn.offsetWidth - width) / 2);
+        indicator.style.width = width + 'px';
+        indicator.style.transform = `translateX(${left}px)`;
+      } catch (_) { /* noop */ }
+    }
+
     function setActive(tab) {
       for (const el of [tabImages, tabQR, tabAIRecognize, tabAITrain, tabUpload]) {
         if (!el) continue;
@@ -257,6 +280,8 @@
         if (active) { el.setAttribute('aria-current', 'page'); }
         else { el.removeAttribute('aria-current'); }
       }
+      // align indicator under the active tab
+      moveIndicator(tab);
     }
 
     // Navegación centralizada vía Router
@@ -274,6 +299,14 @@
     // Estado inicial: activar tab y navegar
     if (tabImages) { setActive(tabImages); }
     try { window.Router && window.Router.navigate('images'); } catch (_) { }
+
+    // keep indicator aligned on resize
+    try {
+      window.addEventListener('resize', () => {
+        const current = document.querySelector('.nav-btn.active');
+        if (current) moveIndicator(current);
+      });
+    } catch (_) { /* noop */ }
   }
 
   function setStatus(msg) {

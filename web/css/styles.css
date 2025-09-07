@@ -125,6 +125,13 @@ body{
   justify-content:center; /* centrar contenido */
   position:sticky; top:72px; z-index:35;
 }
+#navItems{ position:relative; }
+.nav-indicator{
+  position:absolute; height:4px; left:0; bottom:-6px; width:60px;
+  background: var(--brand-orange); border-radius:999px;
+  box-shadow: 0 2px 6px rgba(251,133,0,.35);
+  transition: transform var(--motion-med), width var(--motion-med);
+}
 .nav-toggle{
   background:#f8fafc;color:#0f172a;
   border:1px solid #d1d5db;border-radius:999px;padding:8px 12px;cursor:pointer;
@@ -142,20 +149,30 @@ body{
 }
 .nav-btn:focus{box-shadow:0 0 0 3px var(--accent);outline:none}
 .nav-btn.active{
-  background:var(--c-500);
-  color:#ffffff;
-  border-color:var(--c-500);
-  box-shadow: 0 6px 14px rgba(33,158,188,.28);
+  background:var(--brand-orange);
+  color:#0b1020;
+  border-color:var(--brand-orange);
+  box-shadow: 0 6px 14px rgba(251,133,0,.28);
+}
+/* Keep active state orange on hover as well */
+.nav-btn.active:hover{
+  background:linear-gradient(180deg, var(--brand-orange), #e57300);
+  border-color:#e57300;
+  color:#0b1020;
 }
 .nav-btn:hover{
-  background:#eef2f5;
-  border-color:#cbd5e1;
+  background:var(--brand-orange);
+  color:#0b1020;
+  border-color:var(--brand-orange);
   transform:translateY(-1px);
-  box-shadow:0 4px 12px rgba(0,0,0,.10);
+  box-shadow:0 6px 14px rgba(251,133,0,.28);
 }
 .nav-btn:active{
   transform:translateY(0);
-  box-shadow:0 2px 8px rgba(0,0,0,.12);
+  background:linear-gradient(180deg, var(--brand-orange), #e57300);
+  color:#0b1020;
+  border-color:#e57300;
+  box-shadow:0 2px 8px rgba(251,133,0,.3);
 }
 
 @media (prefers-reduced-motion: reduce){
@@ -197,11 +214,11 @@ body{
 .valve-section h3{
   margin:0 0 8px;
   font-size:1rem;
-  color:var(--c-700);
+  color:var(--c-900); /* stronger contrast */
   background: var(--tint-300);
   padding:8px 10px;
   border-radius:8px;
-  border:1px solid var(--border);
+  border:1px solid var(--c-300); /* more visible border */
   display:flex; align-items:center; gap:8px;
   animation: slideIn .36s ease both;
 }
@@ -288,7 +305,7 @@ body{
 }
 .card{
   background:var(--card);
-  border:1px solid var(--border);
+  border:1px solid rgba(2,48,71,.12); /* subtle brand-tinted border */
   border-radius:10px;
   padding:8px;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -297,10 +314,22 @@ body{
   position:relative; /* para bank-pill */
   transition: transform var(--motion-med), box-shadow var(--motion-med);
 }
+.card::after{
+  content:""; position:absolute; left:0; right:0; bottom:-1px; height:4px;
+  background: var(--brand-orange);
+  border-bottom-left-radius:10px; border-bottom-right-radius:10px;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--motion-med);
+}
 .card:focus{box-shadow:0 0 0 3px var(--accent)}
 .card[role="button"]{user-select:none}
 .card img{width:100%;height:220px;object-fit:cover;border-radius:8px;background:#f1f5f9; transition: transform var(--motion-med);}
-.card:hover{ transform: translateY(-3px); box-shadow: 0 12px 30px rgba(2,48,71,.18); }
+.card:hover{ transform: translateY(-3px); box-shadow: 0 12px 30px rgba(2,48,71,.18); border-color: var(--brand-orange); }
+.card:hover::after{ transform: scaleX(1); }
+.card:focus-visible{ box-shadow: 0 0 0 3px rgba(251,133,0,.35), 0 12px 30px rgba(2,48,71,.18); border-color: var(--brand-orange); }
+.card:focus-visible::after{ transform: scaleX(1); }
+.card:hover .title{ color: var(--c-900); }
 .card:hover img{ transform: scale(1.03); }
 .card .title{margin-top:8px;font-size:.95rem;color:var(--text)}
 .card .subtitle{margin:2px 0 0;font-size:.8rem;color:var(--muted)}
@@ -341,7 +370,7 @@ body{
 .card__meta .meta-val a:hover{ text-decoration:underline; }
 /* new sectioned meta blocks */
 .card__meta .meta-section{ border:1px solid var(--border); border-radius:10px; padding:10px; background:#fff; }
-.card__meta .meta-title{ margin:0 0 6px; display:flex; align-items:center; gap:8px; font-size:.95rem; color:var(--c-700); background:var(--tint-300); padding:6px 8px; border-radius:8px; }
+.card__meta .meta-title{ margin:0 0 6px; display:flex; align-items:center; gap:8px; font-size:.95rem; color:var(--c-900); background:linear-gradient(0deg, rgba(142,202,230,.32), rgba(142,202,230,.18)); padding:6px 8px; border-radius:8px; border:1px solid var(--c-300); }
 .card__meta .meta-title .icon{ width:18px; height:18px; color:var(--c-700); }
 /* compact chips inside cards */
 .card__meta .chip{ padding:6px 10px; font-size:.9rem; }
