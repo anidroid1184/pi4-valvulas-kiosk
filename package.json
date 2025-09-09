@@ -1,0 +1,19 @@
+{
+  "name": "raspeberry-pi-4",
+  "version": "1.0.0",
+  "description": "Aplicación Tkinter en modo kiosko para buscar válvulas por QR o manualmente. Offline, con SQLite.",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "html5-qrcode": "^2.3.8"
+  }
+}

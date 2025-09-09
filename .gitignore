@@ -1,0 +1,51 @@
+# Ignorar documentación/tareas locales
+# Lista de tareas especificas.md
+.venv
+descartado/
+logs/
+console_logs/
+.windsurf
+app/__pycache__
+web/__pycache__
+scripts/__pycache__
+app/services/__pycache__
+app/db/__pycache__
+data/images/
+data/simbology
+web/STATIC/IMG/simbology/
+web/STATIC/IMG/card-photos/
+tests/
+# data/images/index.json
+# data/.cache
+ 
+# General
+*.log
+.DS_Store
+Thumbs.db
+.env
+.env.*
+.vscode/
+.idea/
+.pytest_cache/
+**/__pycache__/
+
+# Node/Frontend
+node_modules/
+web/vendor/
+web/STATIC/IMG/.cache/
+web/STATIC/IMG/generated/
+
+# Datos grandes o generados
+data/.cache/
+data/**/*.cache
+data/**/*.tmp
+data/**/*.bak
+data/*.db
+data/**/*.db
+data/dataset/*.xlsx
+qr-generator/qr-images/
+
+# Python build
+build/
+dist/
+*.egg-info/

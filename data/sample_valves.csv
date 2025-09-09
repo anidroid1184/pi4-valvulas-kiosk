@@ -1,0 +1,6 @@
+id,nombre,uso,ubicacion,qr_code,foto
+1,Valvula Principal,Agua General,Edificio A - Cuarto de maquinas,QR001,images/valvula1.jpg
+2,Valvula Emergencia,Incendios,Edificio A - Piso 1,QR002,images/valvula2.jpg
+3,Valvula Jardin,Riego,Edificio B - Patio,QR003,images/valvula3.jpg
+4,Valvula HVAC,Climatizacion,Edificio B - Techo,QR004,images/valvula4.jpg
+5,Valvula Laboratorio,Agua Desmineralizada,Edificio C - Lab 2,QR005,images/valvula5.jpg
