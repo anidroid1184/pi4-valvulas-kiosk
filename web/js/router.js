@@ -40,7 +40,8 @@
           break;
         }
         case 'ai': {
-          setHidden('imagesPanel', true);
+          // Mostrar imágenes y el panel de AI Reconocer juntos
+          setHidden('imagesPanel', false);
           setHidden('aiPanel', false);
           stopAllCameras();
           try { window.CameraDemo && typeof window.CameraDemo.startAICamera === 'function' && window.CameraDemo.startAICamera(); } catch (_) {}

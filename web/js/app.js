@@ -43,6 +43,14 @@
         }
       };
     });
+
+    // Botones flotantes para la vista de Imágenes: bajar/subir
+    try {
+      const imagesPanel = document.getElementById('imagesPanel');
+      if (imagesPanel) {
+        createImagesScrollFABs(imagesPanel);
+      }
+    } catch (_) { /* noop */ }
   }
 
   // Filtra válvulas por bancos activos (fallback si no existe Filters)
@@ -249,6 +257,29 @@
     const aiTrainPanel = document.getElementById('aiTrainPanel');
     const uploadPanel = document.getElementById('uploadPanel');
 
+    // Create/update an indicator bar under the active tab
+    const navContainer = document.getElementById('navItems');
+    let indicator = null;
+    if (navContainer) {
+      indicator = navContainer.querySelector('.nav-indicator');
+      if (!indicator) {
+        indicator = document.createElement('div');
+        indicator.className = 'nav-indicator';
+        navContainer.appendChild(indicator);
+      }
+    }
+
+    function moveIndicator(targetEl) {
+      try {
+        if (!indicator || !navContainer || !targetEl) return;
+        const btn = targetEl;
+        const width = Math.max(40, Math.round(btn.offsetWidth * 0.6));
+        const left = Math.round(btn.offsetLeft + (btn.offsetWidth - width) / 2);
+        indicator.style.width = width + 'px';
+        indicator.style.transform = `translateX(${left}px)`;
+      } catch (_) { /* noop */ }
+    }
+
     function setActive(tab) {
       for (const el of [tabImages, tabQR, tabAIRecognize, tabAITrain, tabUpload]) {
         if (!el) continue;
@@ -257,6 +288,8 @@
         if (active) { el.setAttribute('aria-current', 'page'); }
         else { el.removeAttribute('aria-current'); }
       }
+      // align indicator under the active tab
+      moveIndicator(tab);
     }
 
     // Navegación centralizada vía Router
@@ -274,6 +307,14 @@
     // Estado inicial: activar tab y navegar
     if (tabImages) { setActive(tabImages); }
     try { window.Router && window.Router.navigate('images'); } catch (_) { }
+
+    // keep indicator aligned on resize
+    try {
+      window.addEventListener('resize', () => {
+        const current = document.querySelector('.nav-btn.active');
+        if (current) moveIndicator(current);
+      });
+    } catch (_) { /* noop */ }
   }
 
   function setStatus(msg) {
@@ -311,7 +352,28 @@
 
     input.addEventListener('input', () => debounce(() => apply(input.value)));
     input.addEventListener('keydown', (e) => { if (e.key === 'Escape') { input.value = ''; apply(''); input.blur(); } });
-    if (btnClear) { btnClear.addEventListener('click', () => { input.value = ''; apply(''); input.focus(); }); }
+    if (btnClear) {
+      btnClear.addEventListener('click', () => {
+        // Limpiar búsqueda de texto
+        input.value = '';
+        apply('');
+        // Limpiar filtros de banco si existen
+        try {
+          if (window.Filters && typeof window.Filters.clear === 'function') {
+            window.Filters.clear();
+          } else {
+            // Fallback local si no existe Filters global
+            if (activeBanks && typeof activeBanks.clear === 'function') {
+              activeBanks.clear();
+            }
+          }
+        } catch (_) { /* noop */ }
+        // Re-renderizar chips visuales
+        try { renderBankFilters(); } catch (_) { }
+        // Foco de vuelta al input para mejor UX
+        input.focus();
+      });
+    }
 
     // Primera carga sin filtro
     apply('');
@@ -431,10 +493,19 @@
     try { console.debug('[RENDER] items in =', Array.isArray(valvulas) ? valvulas.length : 0, 'filtered =', filtered.length); } catch (_) { }
 
     if (!filtered || !filtered.length) {
-      // Mensaje discreto dentro del grid
+      // Mensaje discreto dentro del grid, con pista según filtros de banco/ubicación
       const empty = document.createElement('div');
       empty.className = 'empty';
-      empty.textContent = 'Sin resultados';
+      let msg = 'Sin resultados';
+      try {
+        const hasBankFilters = (window.Filters && typeof window.Filters.getActiveBanks === 'function')
+          ? (window.Filters.getActiveBanks().size > 0)
+          : (activeBanks && activeBanks.size > 0);
+        if (hasBankFilters) {
+          msg = 'Sin resultados para los bancos seleccionados. Verifica las ubicaciones.';
+        }
+      } catch (_) { /* noop */ }
+      empty.textContent = msg;
       grid.appendChild(empty);
       return;
     }
@@ -446,31 +517,102 @@
       state.map.set(v.id, v);
 
       const card = document.createElement('div');
-      card.className = 'card';
+      // Horizontal card layout
+      card.className = 'card card--h';
       card.setAttribute('role', 'button');
       card.setAttribute('tabindex', '0');
       card.setAttribute('aria-label', `Abrir detalles de ${sanitize(v.nombre)}`);
       card.dataset.id = v.id;
       if (v.ref) { card.dataset.ref = v.ref; }
 
+      // Left: image wrapper
+      const media = document.createElement('div');
+      media.className = 'card__media';
       const img = document.createElement('img');
       // Carga ansiosa de portadas, pero forzamos recarga si la imagen cambia
       img.loading = 'eager';
       img.src = v.imagen + '?t=' + Date.now(); // Forzar recarga si se reemplazó la imagen
       img.alt = `${sanitize(v.nombre)} (${v.id})`;
-      img.addEventListener('error', () => {
-        img.replaceWith(placeholderImage());
-      }, { passive: true });
+      img.addEventListener('error', () => { img.replaceWith(placeholderImage()); }, { passive: true });
+      media.appendChild(img);
+
+      // Right: content/info
+      const content = document.createElement('div');
+      content.className = 'card__content';
 
       const title = document.createElement('div');
       title.className = 'title';
       title.textContent = v.nombre;
 
-      const subtitle = document.createElement('div');
-      subtitle.className = 'subtitle';
-      subtitle.textContent = 'Toca para ver detalles';
+      const meta = document.createElement('div');
+      meta.className = 'card__meta';
 
-      card.append(img, title, subtitle);
+      // helper para icono pequeño reutilizando sprite
+      const ICON_SPRITE_SM = 'STATIC/IMG/icons.svg';
+      function iconSm(id) {
+        try {
+          const svgNS = 'http://www.w3.org/2000/svg';
+          const xlinkNS = 'http://www.w3.org/1999/xlink';
+          const svg = document.createElementNS(svgNS, 'svg');
+          svg.setAttribute('class', 'icon');
+          const use = document.createElementNS(svgNS, 'use');
+          use.setAttribute('href', `${ICON_SPRITE_SM}#${id}`);
+          try { use.setAttributeNS(xlinkNS, 'href', `${ICON_SPRITE_SM}#${id}`); } catch (_) { }
+          svg.appendChild(use);
+          return svg;
+        } catch (_) { return null; }
+      }
+
+      // Sección 1: Cantidad
+      const secQty = document.createElement('section');
+      secQty.className = 'meta-section';
+      const hQty = document.createElement('h4'); hQty.className = 'meta-title'; hQty.textContent = 'Cantidad';
+      const iQty = iconSm('icon-list'); if (iQty) hQty.prepend(iQty);
+      const qtyVal = document.createElement('div'); qtyVal.className = 'meta-val'; qtyVal.textContent = (v.cantidad != null && v.cantidad !== '') ? String(v.cantidad) : '—';
+      secQty.append(hQty, qtyVal);
+
+      // Sección 2: Ubicación (chips)
+      const secLoc = document.createElement('section');
+      secLoc.className = 'meta-section';
+      const hLoc = document.createElement('h4'); hLoc.className = 'meta-title'; hLoc.textContent = 'Ubicación';
+      const iLoc = iconSm('icon-guide'); if (iLoc) hLoc.prepend(iLoc);
+      const locVal = document.createElement('div'); locVal.className = 'meta-val';
+      // Render ubicación como chips coloreados, igual que en el sidebar
+      const chipsWrap = document.createElement('div');
+      chipsWrap.style.display = 'flex';
+      chipsWrap.style.flexWrap = 'wrap';
+      chipsWrap.style.gap = '6px';
+      const parts = v.ubicacion ? String(v.ubicacion).split(/[\/|;,]+/).map(s => s.trim()).filter(Boolean) : [];
+      if (parts.length === 0 && v.ubicacion) { parts.push(String(v.ubicacion)); }
+      if (parts.length === 0) { chipsWrap.textContent = '—'; }
+      for (const p of parts) {
+        const chip = document.createElement('span');
+        chip.className = 'chip';
+        const s = String(p).toUpperCase();
+        const first = s.charAt(0);
+        if (first === 'A' || /BANC?O\s*A\b/.test(s) || /\bBANK\s*A\b/.test(s)) chip.classList.add('chip--bank', 'chip--bankA');
+        else if (first === 'B' || /BANC?O\s*B\b/.test(s) || /\bBANK\s*B\b/.test(s)) chip.classList.add('chip--bank', 'chip--bankB');
+        else if (first === 'C' || /BANC?O\s*C\b/.test(s) || /\bBANK\s*C\b/.test(s)) chip.classList.add('chip--bank', 'chip--bankC');
+        else if (first === 'D' || /BANC?O\s*D\b/.test(s) || /\bBANK\s*D\b/.test(s)) chip.classList.add('chip--bank', 'chip--bankD');
+        chip.textContent = p;
+        chipsWrap.appendChild(chip);
+      }
+      locVal.appendChild(chipsWrap);
+      secLoc.append(hLoc, locVal);
+
+      // Sección 3: Número de serie
+      const secSN = document.createElement('section');
+      secSN.className = 'meta-section';
+      const hSN = document.createElement('h4'); hSN.className = 'meta-title'; hSN.textContent = 'Número de serie';
+      const iSN = iconSm('icon-file'); if (iSN) hSN.prepend(iSN);
+      const snVal = document.createElement('div'); snVal.className = 'meta-val'; snVal.textContent = String(v.numero_serie || v.serie || '—');
+      secSN.append(hSN, snVal);
+
+      meta.append(secQty, secLoc, secSN);
+
+      content.append(title, meta);
+
+      card.append(media, content);
       // Al seleccionar una card: fija la referencia para entrenamiento y abre el detalle
       addActivationHandlers(card, () => {
         try {
@@ -505,6 +647,27 @@
           renderMenu(state.valvulas);
           // No tocar panel de Entrenar IA aquí: lo maneja su propio módulo
         });
+      }
+    } catch (_) { /* noop */ }
+
+    // Configurar pista de desplazamiento horizontal para .layout en móviles
+    try {
+      const layout = document.querySelector('.layout');
+      if (layout) {
+        const updateHints = () => {
+          const max = layout.scrollWidth - layout.clientWidth;
+          if (max > 2) {
+            layout.classList.toggle('has-left', layout.scrollLeft > 2);
+            layout.classList.toggle('has-right', layout.scrollLeft < max - 2);
+          } else {
+            layout.classList.remove('has-left');
+            layout.classList.remove('has-right');
+          }
+        };
+        layout.addEventListener('scroll', updateHints, { passive: true });
+        window.addEventListener('resize', updateHints);
+        // primer cálculo
+        updateHints();
       }
     } catch (_) { /* noop */ }
   });
@@ -728,51 +891,7 @@
     kv2.append(dt2, dd2);
     secGuide.append(secGuideH, kv2);
 
-    // 3) Ficha: mini especificación (Cantidad, Ubicación, # de serie)
-    const secFicha = document.createElement('section');
-    secFicha.className = 'valve-section';
-    const secFichaH = document.createElement('h3'); secFichaH.textContent = 'Ficha';
-    const icList = icon('icon-list'); if (icList) secFichaH.prepend(icList);
-    const kv3 = document.createElement('dl'); kv3.className = 'kv';
-    const addKV = (label, value) => {
-      if (value == null || value === '') return;
-      const dtx = document.createElement('dt'); dtx.textContent = label;
-      const ddx = document.createElement('dd'); ddx.textContent = String(value);
-      kv3.append(dtx, ddx);
-    };
-    addKV('Cantidad', data.cantidad);
-    // Ubicaciones como chips (si hay múltiples separadas por coma o /)
-    if (data.ubicacion) {
-      const dtu = document.createElement('dt'); dtu.textContent = 'Ubicación';
-      const ddu = document.createElement('dd');
-      const chipsWrap = document.createElement('div');
-      chipsWrap.style.display = 'flex';
-      chipsWrap.style.flexWrap = 'wrap';
-      chipsWrap.style.gap = '6px';
-      const parts = String(data.ubicacion).split(/[\/,|;]+/).map(s => s.trim()).filter(Boolean);
-      if (parts.length === 0) { parts.push(String(data.ubicacion)); }
-      for (const p of parts) {
-        const chip = document.createElement('span');
-        chip.className = 'chip';
-        const first = String(p).trim().charAt(0).toUpperCase();
-        if (first === 'A' || first === 'B' || first === 'C' || first === 'D') {
-          chip.classList.add('chip--bank', 'chip--bank' + first);
-        } else {
-          // fallback: intentar detectar "Banco X" en el texto
-          const s = String(p).toUpperCase();
-          if (/BANC?O\s*A\b/.test(s)) chip.classList.add('chip--bank', 'chip--bankA');
-          else if (/BANC?O\s*B\b/.test(s)) chip.classList.add('chip--bank', 'chip--bankB');
-          else if (/BANC?O\s*C\b/.test(s)) chip.classList.add('chip--bank', 'chip--bankC');
-          else if (/BANC?O\s*D\b/.test(s)) chip.classList.add('chip--bank', 'chip--bankD');
-        }
-        chip.textContent = p;
-        chipsWrap.appendChild(chip);
-      }
-      ddu.appendChild(chipsWrap);
-      kv3.append(dtu, ddu);
-    }
-    addKV('# de serie', data.numero_serie || data.serie);
-    secFicha.append(secFichaH, kv3);
+    // (Sección "Ficha" eliminada a petición del usuario)
 
     // 4) Símbolo (imagen si existe)
     if (data.simbolo) {
@@ -815,7 +934,6 @@
     }
 
     // Añadir secciones en orden definido
-    wrap.prepend(secFicha); // ya contiene ubicaciones y cantidad
     wrap.prepend(secGuide);
     wrap.prepend(secValve);
 
@@ -830,31 +948,85 @@
         if (el && typeof el.scrollIntoView === 'function') {
           el.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
+        // Asegurar que el panel comience desde arriba
+        if (el && typeof el.scrollTo === 'function') {
+          el.scrollTo({ top: 0, behavior: 'auto' });
+        } else if (el) {
+          el.scrollTop = 0;
+        }
       }
     } catch (_) { }
   }
 
   async function initApp() {
+
     setStatus('Cargando…');
 
-    const [meta, images] = await Promise.all([
+    const [meta, images, valves] = await Promise.all([
       loadMetadata(),
-      discoverImagesFromFolder()
+      discoverImagesFromFolder(),
+      fetchValvesFromBackend()
     ]);
 
+
     let catalog = [];
-    // Prioridad: si hay imágenes desde card-photos, usarlas SIEMPRE
+    // Construir catálogo combinando portadas (images) con metadatos reales de BD (valves)
+    // Reglas:
+    //  - Si hay images, se usan como base para portadas.
+    //  - Si hay valves del backend, se fusionan campos (ubicacion, cantidad, etc.).
+    //  - Si no hay images pero hay valves, se usa valves con simbolo como imagen si existe.
+    //  - Meta local solo como último recurso.
+
+    const mapValves = new Map();
+    if (Array.isArray(valves)) {
+      for (const v of valves) {
+        // Indexar por múltiples llaves para asegurar merge correcto con portadas
+        const keys = new Set();
+        keys.add(String(v.id));
+        if (v.valvula) keys.add(String(v.valvula));
+        if (v.numero_serie) keys.add(String(v.numero_serie));
+        if (v.ref) keys.add(String(v.ref));
+        for (const k of keys) { mapValves.set(k, v); }
+      }
+    }
+
     if (Array.isArray(images) && images.length) {
-      catalog = images;
-    } else if (state.imagesIndex) {
-      // (No aplicará en modo FORCE_LEGACY_STATIC=true, pero mantenemos por compatibilidad)
-      catalog = Array.isArray(images) ? images : buildFallbackValveData(images || []);
+      // Fusionar por id/ref
+      const merged = images.map(it => {
+        const key = String(it.ref || it.id || '').trim();
+        const metaV = mapValves.get(key);
+        if (metaV) {
+          // Combinar, priorizando portada de images y enriqueciendo con ubicacion desde BD
+          return {
+            ...it,
+            ...metaV,
+            id: key,
+            ref: key,
+            imagen: it.imagen || metaV.simbolo || it.imagen,
+            nombre: metaV.valvula || metaV.nombre || it.nombre || key
+          };
+        }
+        return it;
+      });
+      catalog = merged;
+    } else if (Array.isArray(valves) && valves.length) {
+      // No hay images: usar valves del backend
+      catalog = valves.map(v => {
+        // Elegir una referencia visible estable: numero_serie o valvula, en su defecto id
+        const refKey = String(v.numero_serie || v.valvula || v.id);
+        return {
+          ...v,
+          id: refKey,
+          ref: refKey,
+          imagen: v.simbolo || v.imagen || ''
+        };
+      });
     } else if (meta && meta.length) {
-      // Solo si no hay imágenes, usa la metadata demo
       catalog = meta;
     } else {
       catalog = buildFallbackValveData(images || []);
     }
+
 
     state.valvulas = catalog;
     try { console.debug('[INIT] catalog size =', catalog.length); } catch (_) { }
@@ -995,3 +1167,72 @@
 
   document.addEventListener('DOMContentLoaded', initApp, { once: true });
 })();
+
+// --- Utilidades locales: FABs para Imágenes ---
+function createImagesScrollFABs(panel) {
+  // Down FAB
+  (function createDown() {
+    const id = 'imagesScrollDownFab';
+    let fab = document.getElementById(id);
+    if (!fab) {
+      fab = document.createElement('button');
+      fab.id = id;
+      fab.type = 'button';
+      fab.setAttribute('aria-label', 'Ir al final de la página');
+      Object.assign(fab.style, {
+        position: 'fixed', right: '18px', bottom: '18px', width: '52px', height: '52px',
+        borderRadius: '26px', border: 'none', background: '#0ea5e9', color: '#fff',
+        boxShadow: '0 6px 18px rgba(2,132,199,0.45)', cursor: 'pointer', display: 'none',
+        alignItems: 'center', justifyContent: 'center', zIndex: '9999'
+      });
+      fab.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path fill="currentColor" d="M12 3a1 1 0 0 1 1 1v12.59l4.3-4.3a1 1 0 1 1 1.4 1.42l-6 6a1 1 0 0 1-1.4 0l-6-6A1 1 0 1 1 6.7 12.3L11 16.6V4a1 1 0 0 1 1-1z"/></svg>';
+      fab.addEventListener('click', () => {
+        try {
+          const h = Math.max(
+            document.documentElement ? document.documentElement.scrollHeight : 0,
+            document.body ? document.body.scrollHeight : 0
+          );
+          if (typeof window.scrollTo === 'function') {
+            window.scrollTo({ top: h, behavior: 'smooth' });
+          } else {
+            window.scroll(0, h);
+          }
+        } catch (_) { /* noop */ }
+      });
+      document.body.appendChild(fab);
+    }
+    const update = () => { fab.style.display = (panel && !panel.hidden) ? 'flex' : 'none'; };
+    update();
+    try { new MutationObserver(update).observe(panel, { attributes: true, attributeFilter: ['hidden', 'style', 'class'] }); } catch (_) {}
+    window.addEventListener('hashchange', update);
+    window.addEventListener('resize', update);
+  })();
+
+  // Up FAB
+  (function createUp() {
+    const id = 'imagesScrollUpFab';
+    let fab = document.getElementById(id);
+    if (!fab) {
+      fab = document.createElement('button');
+      fab.id = id;
+      fab.type = 'button';
+      fab.setAttribute('aria-label', 'Ir al inicio de la página');
+      Object.assign(fab.style, {
+        position: 'fixed', right: '18px', bottom: '78px', width: '52px', height: '52px',
+        borderRadius: '26px', border: 'none', background: '#0ea5e9', color: '#fff',
+        boxShadow: '0 6px 18px rgba(2,132,199,0.45)', cursor: 'pointer', display: 'none',
+        alignItems: 'center', justifyContent: 'center', zIndex: '9999'
+      });
+      fab.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path fill="currentColor" d="M12 21a1 1 0 0 1-1-1V7.41L6.7 11.7a1 1 0 1 1-1.4-1.42l6-6a1 1 0 0 1 1.4 0l6 6a1 1 0 1 1-1.4 1.42L13 7.41V20a1 1 0 0 1-1 1z"/></svg>';
+      fab.addEventListener('click', () => {
+        try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (_) { window.scroll(0, 0); }
+      });
+      document.body.appendChild(fab);
+    }
+    const update = () => { fab.style.display = (panel && !panel.hidden) ? 'flex' : 'none'; };
+    update();
+    try { new MutationObserver(update).observe(panel, { attributes: true, attributeFilter: ['hidden', 'style', 'class'] }); } catch (_) {}
+    window.addEventListener('hashchange', update);
+    window.addEventListener('resize', update);
+  })();
+}
